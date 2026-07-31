@@ -27,6 +27,6 @@ export function canonicalCategory(name) {
   return CATEGORY_ALIASES[raw] || raw;
 }
 
-export const USERS = ["Usuario 1", "Usuario 2"];
+export const USERS = ["Pablo", "Laila"];
 
 export const USER_STORAGE_KEY = "lozarcash_user";
