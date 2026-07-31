@@ -12,16 +12,16 @@ import {
 Chart.register(ArcElement, Tooltip, Legend, DoughnutController);
 
 const PALETTE = [
-  "#0d6b4c",
-  "#b54708",
-  "#0e7490",
-  "#9a3412",
-  "#4d7c0f",
-  "#a16207",
-  "#0369a1",
-  "#7c2d12",
-  "#365314",
-  "#57534e",
+  "#3dba8a",
+  "#e89b6d",
+  "#5ec8d4",
+  "#e8a54b",
+  "#7dd3a8",
+  "#c4b5fd",
+  "#6aa8ff",
+  "#f07167",
+  "#a3e635",
+  "#94a3b8",
 ];
 
 let chartInstance = null;
@@ -71,11 +71,16 @@ export function renderExpenseChart(canvas, byCategory) {
           labels: {
             boxWidth: 12,
             padding: 12,
-            font: { family: "'DM Sans', sans-serif", size: 12 },
-            color: "#1a2e24",
+            font: { family: "'Sora', sans-serif", size: 12 },
+            color: "#e7f0eb",
           },
         },
         tooltip: {
+          backgroundColor: "#121a18",
+          titleColor: "#e7f0eb",
+          bodyColor: "#8b9e94",
+          borderColor: "#27332e",
+          borderWidth: 1,
           callbacks: {
             label(ctx) {
               const total = ctx.dataset.data.reduce((a, b) => a + b, 0);

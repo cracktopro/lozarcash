@@ -4,12 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Lozarcash — finanzas compartidas para dos" />
-  <meta name="theme-color" content="#0b3d2e" />
+  <meta name="theme-color" content="#0b1110" />
+  <meta name="color-scheme" content="dark" />
   <title>Lozarcash</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <script type="importmap">
   {
@@ -30,22 +31,23 @@
           <p class="topbar__tag">Vuestra caja compartida</p>
         </div>
       </div>
-      <div class="month-nav" aria-label="Ciclo económico">
-        <button type="button" class="month-nav__btn" id="btn-month-prev" aria-label="Ciclo anterior">‹</button>
-        <span class="month-nav__label" id="current-period">—</span>
-        <button type="button" class="month-nav__btn" id="btn-month-next" aria-label="Ciclo siguiente">›</button>
+      <div class="topbar__cycle">
+        <p class="cycle-note">Ciclo económico <strong>24 → 23</strong></p>
+        <p id="period-range" class="cycle-range">—</p>
+        <div class="month-nav" aria-label="Ciclo económico">
+          <button type="button" class="month-nav__btn" id="btn-month-prev" aria-label="Ciclo anterior">‹</button>
+          <span class="month-nav__label" id="current-period">—</span>
+          <button type="button" class="month-nav__btn" id="btn-month-next" aria-label="Ciclo siguiente">›</button>
+        </div>
       </div>
     </header>
-
-    <p class="cycle-note">Mes económico: del <strong>día 24</strong> al <strong>23</strong> siguiente (encaja con vuestros cobros).</p>
-    <p id="period-range" class="cycle-range">—</p>
 
     <p id="sync-error" class="banner banner--error" hidden role="alert"></p>
     <p id="month-hint" class="banner banner--info" hidden role="status"></p>
 
     <main class="dashboard">
       <!-- 1. Lo que importa: cuánto os queda -->
-      <section class="hero" aria-labelledby="hero-title">
+      <section class="hero panel-hero" aria-labelledby="hero-title">
         <p class="hero__eyebrow" id="hero-title">Disponible ahora</p>
         <p class="hero__amount" id="disponible-ahora">— €</p>
         <p class="hero__lead" id="hero-lead">Lo que os queda en este ciclo tras ingresos, cuotas y gastos</p>
@@ -80,7 +82,7 @@
       </section>
 
       <!-- 2. Calendario de pagos fijos -->
-      <section class="section" aria-labelledby="calendar-title">
+      <section class="section panel-calendar" aria-labelledby="calendar-title">
         <div class="section__head">
           <div>
             <h2 id="calendar-title" class="section__title">Calendario de pagos</h2>
@@ -94,7 +96,7 @@
       </section>
 
       <!-- 3. Repartir lo disponible -->
-      <section class="section" aria-labelledby="envelope-title">
+      <section class="section panel-envelopes" aria-labelledby="envelope-title">
         <div class="section__head">
           <div>
             <h2 id="envelope-title" class="section__title">Sobres</h2>
@@ -108,7 +110,7 @@
       </section>
 
       <!-- 4. Actividad del ciclo -->
-      <section class="section" aria-labelledby="recent-title">
+      <section class="section panel-movements" aria-labelledby="recent-title">
         <div class="section__head">
           <div>
             <h2 id="recent-title" class="section__title">Movimientos</h2>
@@ -120,7 +122,7 @@
       </section>
 
       <!-- 5. Cuotas (lista compacta) -->
-      <section class="section" aria-labelledby="fixed-title">
+      <section class="section panel-fixed" aria-labelledby="fixed-title">
         <div class="section__head">
           <div>
             <h2 id="fixed-title" class="section__title">Todas las cuotas</h2>
@@ -132,7 +134,7 @@
       </section>
 
       <!-- 6. Analítica -->
-      <section class="section" aria-labelledby="analytics-title">
+      <section class="section panel-analytics" aria-labelledby="analytics-title">
         <div class="section__head">
           <div>
             <h2 id="analytics-title" class="section__title">Dónde se va el dinero</h2>
