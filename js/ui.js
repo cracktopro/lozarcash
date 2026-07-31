@@ -8,18 +8,25 @@ import {
   USER_STORAGE_KEY,
 } from "./constants.js";
 import {
+  CYCLE_START_DAY,
   computeMonthlyBalance,
   countByMonth,
   expensesByCategory,
   formatMoney,
   formatPeriod,
+  formatPeriodNav,
   formatShortDate,
+  dateKey,
+  getCalendarDays,
+  getEconomicPeriodStart,
   getMonthTransactions,
   getMonthlyFixed,
+  getUpcomingFixedEvents,
+  groupFixedByDay,
   monthYearKey,
-  shiftMonth,
+  shiftEconomicPeriod,
   spendByCategory,
-  startOfMonth,
+  startOfDay,
 } from "./calculations.js";
 import { addTransaction, removeTransaction } from "./transactions.js";
 import { saveBudget } from "./budgets.js";
@@ -27,9 +34,9 @@ import { renderExpenseChart } from "./charts.js";
 
 let currentTransactions = [];
 let currentBudget = { monthYear: monthYearKey(), categories: {} };
-/** Mes que se está visualizando (día 1 a mediodía) */
-let viewMonth = startOfMonth(new Date());
-/** Callback para que app.js re-suscriba el presupuesto del mes */
+/** Inicio del ciclo económico visualizado (día 24) */
+let viewMonth = getEconomicPeriodStart(new Date());
+/** Callback para que app.js re-suscriba el presupuesto del ciclo */
 let monthChangeHandler = null;
 
 function todayInputValue(ref = new Date()) {
@@ -40,13 +47,11 @@ function todayInputValue(ref = new Date()) {
   return `${y}-${m}-${day}`;
 }
 
-/** Día sugerido al crear tx: hoy si el mes visto es el actual; si no, día 1 de ese mes */
+/** Día sugerido: hoy si estás en el ciclo actual; si no, el 24 de inicio del ciclo visto */
 function defaultDateForView() {
   const now = new Date();
-  if (
-    viewMonth.getFullYear() === now.getFullYear() &&
-    viewMonth.getMonth() === now.getMonth()
-  ) {
+  const current = getEconomicPeriodStart(now);
+  if (viewMonth.getTime() === current.getTime()) {
     return todayInputValue(now);
   }
   return todayInputValue(viewMonth);
@@ -89,7 +94,7 @@ export function getViewMonth() {
 }
 
 export function setViewMonth(date) {
-  viewMonth = startOfMonth(date);
+  viewMonth = getEconomicPeriodStart(date);
   if (monthChangeHandler) monthChangeHandler(viewMonth);
   renderDashboard();
 }
@@ -121,7 +126,10 @@ export function renderDashboard() {
   const savingsEl = document.getElementById("savings-rate");
   const budgetLead = document.getElementById("budget-lead");
 
-  if (periodEl) periodEl.textContent = formatPeriod(viewMonth);
+  if (periodEl) periodEl.textContent = formatPeriodNav(viewMonth);
+  const rangeEl = document.getElementById("period-range");
+  if (rangeEl) rangeEl.textContent = formatPeriod(viewMonth);
+
   if (disponibleEl) {
     disponibleEl.textContent = formatMoney(balance.restante);
     disponibleEl.classList.toggle("is-negative", balance.restante < 0);
@@ -137,10 +145,10 @@ export function renderDashboard() {
     meterLabel.textContent =
       balance.margen > 0
         ? `Habéis gastado ${formatMoney(balance.gastosVariables)} de ${formatMoney(balance.margen)} para el día a día`
-        : "Aún no hay margen para gastos variables este mes";
+        : "Aún no hay margen para gastos variables en este ciclo";
   }
   if (footnote) {
-    footnote.textContent = `Presupuesto variable ${formatMoney(balance.margen)} · cuotas ${formatMoney(balance.gastosFijos)} · arrastre ${formatMoney(balance.carryIn)}`;
+    footnote.textContent = `Ciclo ${formatPeriod(viewMonth)} · variable ${formatMoney(balance.margen)} · cuotas ${formatMoney(balance.gastosFijos)}`;
   }
   if (savingsEl) {
     const rate = balance.tasaAhorro;
@@ -152,6 +160,7 @@ export function renderDashboard() {
   }
 
   renderMonthHint(transactions);
+  renderCalendar(transactions);
   renderFixedList(getMonthlyFixed(transactions, viewMonth));
   renderRecent(getMonthTransactions(transactions, viewMonth));
   renderEnvelopes(balance);
@@ -181,12 +190,96 @@ function renderMonthHint(transactions) {
 
   if (currentCount === 0 && bestKey && bestCount > 0) {
     const [y, m] = bestKey.split("-").map(Number);
-    const label = formatPeriod(new Date(y, m - 1, 1));
+    const label = formatPeriod(new Date(y, m - 1, CYCLE_START_DAY));
     el.hidden = false;
-    el.innerHTML = `No hay movimientos registrados en este mes. Hay <strong>${bestCount}</strong> en <strong>${escapeHtml(label)}</strong>. Los fijos se repiten solos; el saldo restante arrastra. <button type="button" class="btn-link" data-goto-month="${bestKey}">Ver ese mes</button>`;
+    el.innerHTML = `No hay movimientos en este ciclo. Hay <strong>${bestCount}</strong> en <strong>${escapeHtml(label)}</strong>. <button type="button" class="btn-link" data-goto-month="${bestKey}">Ver ese ciclo</button>`;
   } else {
     el.hidden = true;
     el.innerHTML = "";
+  }
+}
+
+function renderCalendar(transactions) {
+  const grid = document.getElementById("calendar-grid");
+  const list = document.getElementById("calendar-events");
+  const empty = document.getElementById("calendar-empty");
+  const upcomingTotal = document.getElementById("calendar-upcoming-total");
+  if (!grid || !list) return;
+
+  const byDay = groupFixedByDay(transactions, viewMonth);
+  const days = getCalendarDays(viewMonth);
+  const today = startOfDay(new Date());
+  const upcoming = getUpcomingFixedEvents(transactions, new Date(), 45).filter(
+    (tx) => tx.type === "gasto"
+  );
+
+  grid.innerHTML = "";
+  for (const day of days) {
+    const key = dateKey(day);
+    const items = byDay[key] || [];
+    const isToday = day.getTime() === today.getTime();
+    const hasPay = items.some((t) => t.type === "gasto");
+    const hasIncome = items.some((t) => t.type === "ingreso");
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "cal-day";
+    if (isToday) btn.classList.add("cal-day--today");
+    if (hasPay) btn.classList.add("cal-day--gasto");
+    if (hasIncome) btn.classList.add("cal-day--ingreso");
+    btn.dataset.date = key;
+    btn.setAttribute(
+      "aria-label",
+      `${formatShortDate(day)}${items.length ? `, ${items.length} cuota(s)` : ""}`
+    );
+    btn.innerHTML = `
+      <span class="cal-day__num">${day.getDate()}</span>
+      <span class="cal-day__dots" aria-hidden="true">
+        ${hasIncome ? '<i class="dot dot--in"></i>' : ""}
+        ${hasPay ? '<i class="dot dot--out"></i>' : ""}
+      </span>
+    `;
+    btn.addEventListener("click", () => {
+      const target = list.querySelector(`[data-event-date="${key}"]`);
+      target?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      target?.classList.add("cal-event--flash");
+      setTimeout(() => target?.classList.remove("cal-event--flash"), 1200);
+    });
+    grid.appendChild(btn);
+  }
+
+  list.innerHTML = "";
+  const periodEvents = getMonthlyFixed(transactions, viewMonth, 40).filter(
+    (tx) => tx.type === "gasto"
+  );
+
+  if (empty) empty.hidden = periodEvents.length > 0;
+
+  for (const tx of periodEvents) {
+    const li = document.createElement("li");
+    li.className = "cal-event";
+    li.dataset.eventDate = dateKey(tx._date);
+    if (tx._date < today) li.classList.add("cal-event--past");
+    li.innerHTML = `
+      <div class="cal-event__date">
+        <span class="cal-event__day">${tx._date.getDate()}</span>
+        <span class="cal-event__mon">${tx._date.toLocaleDateString("es-ES", { month: "short" })}</span>
+      </div>
+      <div class="cal-event__body">
+        <span class="cal-event__title">${escapeHtml(tx.concept)}</span>
+        <span class="cal-event__meta">${escapeHtml(tx.category)}${tx._projected ? " · recurrente" : ""}</span>
+      </div>
+      <span class="cal-event__amount">−${formatMoney(tx.amount)}</span>
+    `;
+    list.appendChild(li);
+  }
+
+  if (upcomingTotal) {
+    const nextSum = upcoming.reduce((s, t) => s + (Number(t.amount) || 0), 0);
+    upcomingTotal.textContent =
+      upcoming.length > 0
+        ? `Próximos 45 días: ${upcoming.length} pagos · ${formatMoney(nextSum)}`
+        : "Sin pagos fijos próximos";
   }
 }
 
@@ -380,14 +473,18 @@ function updateFixedToggleLabel(form) {
 export function initMonthNav() {
   const prev = document.getElementById("btn-month-prev");
   const next = document.getElementById("btn-month-next");
-  prev?.addEventListener("click", () => setViewMonth(shiftMonth(viewMonth, -1)));
-  next?.addEventListener("click", () => setViewMonth(shiftMonth(viewMonth, 1)));
+  prev?.addEventListener("click", () =>
+    setViewMonth(shiftEconomicPeriod(viewMonth, -1))
+  );
+  next?.addEventListener("click", () =>
+    setViewMonth(shiftEconomicPeriod(viewMonth, 1))
+  );
 
   document.getElementById("month-hint")?.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-goto-month]");
     if (!btn) return;
     const [y, m] = btn.dataset.gotoMonth.split("-").map(Number);
-    setViewMonth(new Date(y, m - 1, 1));
+    setViewMonth(new Date(y, m - 1, CYCLE_START_DAY));
   });
 }
 
@@ -485,14 +582,10 @@ export function initModal() {
     try {
       setStoredUser(payload.addedBy);
       await addTransaction(payload);
-      // Si guarda en otro mes, saltar a ese mes para ver el efecto
-      const [y, m] = payload.date.split("-").map(Number);
-      const txMonth = new Date(y, m - 1, 1);
-      if (
-        txMonth.getFullYear() !== viewMonth.getFullYear() ||
-        txMonth.getMonth() !== viewMonth.getMonth()
-      ) {
-        setViewMonth(txMonth);
+      const [y, m, d] = payload.date.split("-").map(Number);
+      const txPeriod = getEconomicPeriodStart(new Date(y, m - 1, d));
+      if (txPeriod.getTime() !== viewMonth.getTime()) {
+        setViewMonth(txPeriod);
       }
       closeModal();
     } catch (err) {

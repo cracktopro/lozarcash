@@ -151,13 +151,179 @@ body {
 }
 
 .month-nav__label {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--color-ink-muted);
   text-transform: capitalize;
-  min-width: 6.8rem;
+  min-width: 5.8rem;
+  max-width: 7.2rem;
   text-align: center;
-  padding: 0 0.15rem;
+  padding: 0 0.1rem;
+  line-height: 1.2;
+}
+
+.cycle-note {
+  font-size: 0.78rem;
+  color: var(--color-ink-muted);
+  margin-top: -0.25rem;
+}
+
+.cycle-range {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-transform: capitalize;
+  margin-top: -0.45rem;
+}
+
+/* —— Calendario de pagos —— */
+.cal-summary {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  margin: -0.35rem 0 0.75rem;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.15rem;
+  font: inherit;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.cal-day:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.cal-day__num {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.cal-day__dots {
+  display: flex;
+  gap: 0.15rem;
+  min-height: 0.35rem;
+}
+
+.dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  display: block;
+}
+
+.dot--in {
+  background: var(--color-accent);
+}
+
+.dot--out {
+  background: var(--color-gasto);
+}
+
+.cal-day--today {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.cal-day--gasto {
+  background: #fff7ed;
+}
+
+.cal-day--ingreso {
+  background: #eef8f3;
+}
+
+.cal-day--gasto.cal-day--ingreso {
+  background: linear-gradient(135deg, #eef8f3 50%, #fff7ed 50%);
+}
+
+.cal-events {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-height: 16rem;
+  overflow: auto;
+}
+
+.cal-event {
+  display: grid;
+  grid-template-columns: 2.6rem 1fr auto;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.55rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid transparent;
+}
+
+.cal-event--past {
+  opacity: 0.55;
+}
+
+.cal-event--flash {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.cal-event__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+}
+
+.cal-event__day {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.cal-event__mon {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  font-weight: 700;
+}
+
+.cal-event__title {
+  display: block;
+  font-weight: 650;
+  font-size: 0.88rem;
+}
+
+.cal-event__meta {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--color-ink-muted);
+}
+
+.cal-event__amount {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-gasto);
+  white-space: nowrap;
+  font-size: 0.88rem;
 }
 
 /* —— Banners —— */

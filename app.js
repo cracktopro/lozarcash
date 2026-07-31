@@ -47,7 +47,7 @@ function boot() {
     }
   );
 
-  console.log("[Lozarcash] Listo: fijos recurrentes, arrastre de saldo y analítica.");
+  console.log("[Lozarcash] Listo: ciclo 24→24, calendario de pagos y analítica.");
 }
 
 boot();

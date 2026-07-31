@@ -1,7 +1,7 @@
 # Contexto del Proyecto: Lozarcash - Gestor Financiero Personal
 
 ## 1. Descripción General
-"Lozarcash" es una aplicación web de control de finanzas personales diseñada para ser utilizada por dos personas que comparten gastos. El objetivo es registrar ingresos, gastos fijos y variables, establecer presupuestos mensuales y analizar el flujo de caja mediante gráficos. 
+"Lozarcash" es una aplicación web de control de finanzas personales diseñada para ser utilizada por dos personas que comparten gastos. El objetivo es registrar ingresos, gastos fijos y variables, establecer presupuestos por ciclo, consultar un calendario de pagos fijos y analizar el flujo de caja mediante gráficos.
 
 La aplicación debe ser rápida, responsiva (adaptada a móviles) y funcionar en tiempo real para que ambos usuarios vean los datos actualizados al instante.
 
@@ -30,76 +30,68 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+```
 
-4. Estructura de Datos Propuesta (Firestore)
+## 4. Estructura de Datos Propuesta (Firestore)
 Para optimizar las lecturas y mantener el sistema ordenado, utilizaremos las siguientes colecciones:
 
-Colección transactions (Todos los movimientos):
+**Colección `transactions` (Todos los movimientos):**
 
-id (string, autogenerado)
+- id (string, autogenerado)
+- type (string: "ingreso" | "gasto")
+- amount (number)
+- concept (string)
+- category (string, ej: "Hogar", "Mascotas", "Huerto y Terraza", "Ocio y Cómics", "Formación", "Gasolina", "Supermercado")
+- date (timestamp)
+- isFixed (boolean: cuota/ingreso recurrente mensual)
+- isBizum (boolean)
+- addedBy (string)
 
-type (string: "ingreso" | "gasto")
+**Colección `budgets` (Límites por ciclo económico):**
 
-amount (number)
+- monthYear (string, ej: "2026-07" = ciclo que empieza el 24/07)
+- categories (map/object con el límite asignado a cada categoría)
 
-concept (string)
+## 4.1 Mes económico (regla de negocio)
+El ciclo no es el mes civil (1–30/31), sino:
 
-category (string, ej: "Hogar", "Mascotas", "Huerto y Terraza", "Ocio y Cómics", "Formación", "Gasolina", "Supermercado")
+- **Inicio:** día **24** de un mes
+- **Fin:** día **23** del mes siguiente (el siguiente ciclo empieza el 24)
 
-date (timestamp)
+Así se alinean los cobros fijos (p. ej. días 24 y 26) con el periodo de gasto. Navegación ‹ › cambia de ciclo; los fijos se proyectan dentro del ciclo según su día del mes.
 
-isFixed (boolean: para identificar si es una cuota mensual)
-
-isBizum (boolean: para identificar pagos o cobros rápidos)
-
-addedBy (string: identificador del usuario que lo añade)
-
-Colección budgets (Límites mensuales establecidos):
-
-monthYear (string, ej: "2026-07")
-
-categories (map/object con el límite asignado a cada categoría)
-
-5. Funcionalidades Core (Checklist de Desarrollo para Cursor)
-[x] UI/UX Base: Crear un index.html con un layout tipo Dashboard, usando CSS Grid/Flexbox. Paleta de colores limpia (modo claro/oscuro opcional).
+## 5. Funcionalidades Core (Checklist)
+[x] UI/UX Base: layout tipo dashboard, paleta limpia, móvil primero.
 
 [x] Dashboard Principal:
+- Balance del ciclo (arrastre + ingresos − fijos recurrentes = margen; margen − variables = restante).
+- Termómetro del presupuesto variable.
+- Lista de cuotas fijas del ciclo.
 
-Calcular y mostrar el Balance Mensual (arrastre del mes anterior + ingresos − gastos fijos recurrentes = margen; margen − variables = restante que arrastra al mes siguiente).
+[x] CRUD de Transacciones:
+- Modal rápido (fecha por defecto hoy / día del ciclo).
+- Toggle Bizum y «se repite cada mes».
+- Listener en tiempo real (`onSnapshot`).
+- Eliminar movimientos y cuotas (la edición in-place queda como mejora opcional).
 
-"Termómetro" visual del margen disponible vs gastado.
+[x] Sistema de Sobres:
+- Asignar el **disponible en caja** (restante real) a categorías.
+- Barras verde → naranja → rojo solo si hay límite.
 
-Lista de próximos gastos/ingresos fijos del mes (cuotas recurrentes desde su fecha de alta).
-
-[x] CRUD de Transacciones (El día a día):
-
-Modal rápido para añadir nueva transacción (Fecha por defecto: hoy).
-
-Checkbox/Toggle rápido para marcar si es "Bizum".
-
-Listener en tiempo real (onSnapshot) de Firestore para actualizar la vista inmediatamente cuando el otro usuario añade un dato.
-
-[x] Sistema de Estimador / Sobres:
-
-Interfaz para asignar el dinero disponible en caja (restante real) a diferentes categorías.
-
-Barras de progreso por categoría que cambien de color (verde -> naranja -> rojo) solo cuando hay límite asignado y se acerca/supera.
+[x] Calendario de pagos:
+- Vista del ciclo con días marcados (ingresos/pagos fijos).
+- Lista de próximos pagos fijos con importe.
 
 [x] Analítica e Histórico:
+- Chart.js (tarta de gastos del ciclo).
+- Selector de ciclo económico.
+- Tasa de ahorro del ciclo visualizado.
 
-Vista separada o sección inferior con Chart.js.
+## 6. Instrucciones Especiales para el LLM (Cursor)
+Escribe código modular. Separa Firebase, UI y cálculos en distintos archivos JS; imports con `<script type="module">`.
 
-Gráfico de tarta de gastos del mes actual por categoría.
+Minimiza lecturas a Firestore (listeners eficientes).
 
-Selector de mes para consultar el histórico.
+Maneja correctamente Timestamp de Firebase y fechas en zona local (evitar claves UTC).
 
-Cálculo de Tasa de Ahorro del mes visualizado.
-
-6. Instrucciones Especiales para el LLM (Cursor)
-Escribe código modular. Separa la lógica de Firebase, la lógica de la UI y los cálculos en distintos archivos JS si es necesario, pero asegúrate de que los imports funcionen correctamente en un entorno estático (usa <script type="module"> en el HTML).
-
-Minimiza las lecturas a Firestore (usa listeners eficientes y evita recargar toda la base de datos para pequeños cambios).
-
-Asegúrate de que las consultas de fechas manejen correctamente los objetos Timestamp de Firebase.
-
-Genera el código paso a paso, priorizando primero tener la conexión a Firestore y el guardado de datos funcionando, y posteriormente la visualización y gráficos.
+Prioriza conexión y guardado, luego visualización, ciclos económicos y gráficos.

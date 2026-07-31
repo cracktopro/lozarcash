@@ -1,12 +1,14 @@
 /**
- * Cálculos del dashboard:
- * - Fijos recurrentes desde su mes de alta
- * - Saldo arrastrado mes a mes
- * - Analítica (tasa de ahorro, gastos por categoría)
+ * Cálculos Lozarcash
+ * - Mes económico: del día 24 al 24 siguiente
+ * - Fijos recurrentes + arrastre de saldo
+ * - Calendario de pagos y analítica
  */
 import { canonicalCategory } from "./constants.js";
 
-/** Convierte Timestamp de Firestore / Date / string / {seconds} a Date local */
+/** Día de inicio del ciclo económico (cobro / cierre) */
+export const CYCLE_START_DAY = 24;
+
 export function toDate(value) {
   if (!value) return null;
   if (typeof value.toDate === "function") return value.toDate();
@@ -18,7 +20,6 @@ export function toDate(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/** Importe robusto (number, "12.5", "12,5") */
 export function toAmount(value) {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
   if (typeof value === "string") {
@@ -28,10 +29,6 @@ export function toAmount(value) {
   return 0;
 }
 
-/**
- * Normaliza un doc de Firestore.
- * Si falta `type`, se asume "gasto".
- */
 export function normalizeTransaction(raw) {
   const rawType = String(raw.type ?? "")
     .toLowerCase()
@@ -50,23 +47,72 @@ export function normalizeTransaction(raw) {
   };
 }
 
-export function startOfMonth(date = new Date()) {
-  return new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
-}
-
-export function endOfMonth(date = new Date()) {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
-}
-
 export function startOfDay(date = new Date()) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
 }
 
-export function isInMonth(date, ref = new Date()) {
-  return (
-    date.getFullYear() === ref.getFullYear() &&
-    date.getMonth() === ref.getMonth()
+/** Clave local yyyy-mm-dd (evita desfases UTC de toISOString) */
+export function dateKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Inicio del ciclo económico que contiene `date`.
+ * Ej: 10 ago → 24 jul; 24 jul → 24 jul; 26 jul → 24 jul.
+ */
+export function getEconomicPeriodStart(date = new Date()) {
+  const d = startOfDay(date);
+  if (d.getDate() >= CYCLE_START_DAY) {
+    return new Date(d.getFullYear(), d.getMonth(), CYCLE_START_DAY, 0, 0, 0, 0);
+  }
+  return new Date(d.getFullYear(), d.getMonth() - 1, CYCLE_START_DAY, 0, 0, 0, 0);
+}
+
+/** Fin exclusivo del ciclo (= 24 del mes siguiente) */
+export function getEconomicPeriodEnd(periodStart) {
+  return new Date(
+    periodStart.getFullYear(),
+    periodStart.getMonth() + 1,
+    CYCLE_START_DAY,
+    0,
+    0,
+    0,
+    0
   );
+}
+
+export function shiftEconomicPeriod(periodStart, delta) {
+  return new Date(
+    periodStart.getFullYear(),
+    periodStart.getMonth() + delta,
+    CYCLE_START_DAY,
+    0,
+    0,
+    0,
+    0
+  );
+}
+
+export function isInEconomicPeriod(date, periodStart) {
+  const t = date.getTime();
+  return t >= periodStart.getTime() && t < getEconomicPeriodEnd(periodStart).getTime();
+}
+
+/** @deprecated alias — la app usa ciclos económicos, no meses civiles */
+export function startOfMonth(date = new Date()) {
+  return getEconomicPeriodStart(date);
+}
+
+export function shiftMonth(date, delta) {
+  return shiftEconomicPeriod(getEconomicPeriodStart(date), delta);
+}
+
+export function isInMonth(date, ref = new Date()) {
+  const period = getEconomicPeriodStart(ref);
+  return isInEconomicPeriod(date, period);
 }
 
 export function formatMoney(amount) {
@@ -79,27 +125,44 @@ export function formatMoney(amount) {
   );
 }
 
-export function formatPeriod(date = new Date()) {
-  return date.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+/** Etiqueta del ciclo: "24 jul – 23 ago 2026" */
+export function formatPeriod(periodStart = getEconomicPeriodStart()) {
+  const start = getEconomicPeriodStart(periodStart);
+  const lastDay = new Date(getEconomicPeriodEnd(start).getTime() - 1);
+  const a = start.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+  const b = lastDay.toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  return `${a} – ${b}`;
+}
+
+/** Etiqueta corta para la barra: "Ciclo 24 jul" */
+export function formatPeriodNav(periodStart = getEconomicPeriodStart()) {
+  const start = getEconomicPeriodStart(periodStart);
+  const label = start.toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "short",
+  });
+  return `Ciclo ${label}`;
 }
 
 export function formatShortDate(date) {
   if (!date) return "—";
   return date.toLocaleDateString("es-ES", {
+    weekday: "short",
     day: "numeric",
     month: "short",
-    year: "numeric",
   });
 }
 
+/** Clave de presupuesto / ciclo: yyyy-mm del 24 de inicio */
 export function monthYearKey(date = new Date()) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const start = getEconomicPeriodStart(date);
+  const y = start.getFullYear();
+  const m = String(start.getMonth() + 1).padStart(2, "0");
   return `${y}-${m}`;
-}
-
-export function shiftMonth(date, delta) {
-  return new Date(date.getFullYear(), date.getMonth() + delta, 1, 12, 0, 0, 0);
 }
 
 export function countByMonth(transactions) {
@@ -113,61 +176,75 @@ export function countByMonth(transactions) {
   return map;
 }
 
-/** Proyecta el día de un fijo al mes de referencia (ajusta fin de mes). */
-export function projectFixedDate(templateDate, refMonth) {
+/**
+ * Proyecta el día de un fijo dentro del ciclo económico.
+ * Día ≥ 24 → mes del inicio del ciclo; día < 24 → mes del cierre.
+ */
+export function projectFixedIntoPeriod(templateDate, periodStart) {
   const day = templateDate.getDate();
-  const y = refMonth.getFullYear();
-  const m = refMonth.getMonth();
-  const lastDay = new Date(y, m + 1, 0).getDate();
-  return new Date(y, m, Math.min(day, lastDay), 12, 0, 0, 0);
+  const start = getEconomicPeriodStart(periodStart);
+  const end = getEconomicPeriodEnd(start);
+
+  let year;
+  let month;
+  if (day >= CYCLE_START_DAY) {
+    year = start.getFullYear();
+    month = start.getMonth();
+  } else {
+    const next = end; // day 24 next month — use that calendar month for days 1–23
+    year = next.getFullYear();
+    month = next.getMonth();
+  }
+
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const occurrence = new Date(year, month, Math.min(day, lastDay), 12, 0, 0, 0);
+
+  // Seguridad: si por rareza cae fuera, clamp al ciclo
+  if (occurrence < start) return new Date(start.getTime() + 12 * 3600000);
+  if (occurrence >= end) return new Date(end.getTime() - 12 * 3600000);
+  return occurrence;
 }
 
-/**
- * Plantillas fijas activas en el mes: alta en ese mes o en uno anterior.
- * `_projected` = true si la ocurrencia no es el documento original de ese mes.
- */
-export function getActiveFixedTemplates(transactions, refDate = new Date()) {
-  const refStart = startOfMonth(refDate).getTime();
+export function getActiveFixedTemplates(transactions, periodStart = getEconomicPeriodStart()) {
+  const start = getEconomicPeriodStart(periodStart);
+  const startTs = start.getTime();
 
   return transactions
     .filter((tx) => {
       if (!tx.isFixed) return false;
       const d = toDate(tx.date);
       if (!d) return false;
-      return startOfMonth(d).getTime() <= refStart;
+      return getEconomicPeriodStart(d).getTime() <= startTs;
     })
     .map((tx) => {
       const origin = toDate(tx.date);
-      const occurrence = projectFixedDate(origin, refDate);
+      const occurrence = projectFixedIntoPeriod(origin, start);
       return {
         ...tx,
         _date: occurrence,
         _originDate: origin,
-        _projected: !isInMonth(origin, refDate),
+        _projected: !isInEconomicPeriod(origin, start),
       };
     })
     .sort((a, b) => a._date - b._date);
 }
 
-function findEarliestMonth(transactions, fallback) {
+function findEarliestPeriod(transactions, fallbackStart) {
   let min = null;
   for (const tx of transactions) {
     const d = toDate(tx.date);
     if (!d) continue;
-    const s = startOfMonth(d);
+    const s = getEconomicPeriodStart(d);
     if (!min || s < min) min = s;
   }
-  const fb = startOfMonth(fallback);
+  const fb = getEconomicPeriodStart(fallbackStart);
   if (!min) return fb;
   return min > fb ? fb : min;
 }
 
-/**
- * Balance de un mes concreto con arrastre opcional.
- * Fijos = cuotas recurrentes activas; variables = movimientos no fijos del mes.
- */
-export function computeSingleMonth(transactions, refDate = new Date(), carryIn = 0) {
-  const fixed = getActiveFixedTemplates(transactions, refDate);
+export function computeSingleMonth(transactions, periodStart = getEconomicPeriodStart(), carryIn = 0) {
+  const start = getEconomicPeriodStart(periodStart);
+  const fixed = getActiveFixedTemplates(transactions, start);
 
   let ingresosFijos = 0;
   let gastosFijos = 0;
@@ -182,7 +259,7 @@ export function computeSingleMonth(transactions, refDate = new Date(), carryIn =
   for (const tx of transactions) {
     if (tx.isFixed) continue;
     const d = toDate(tx.date);
-    if (!d || !isInMonth(d, refDate)) continue;
+    if (!d || !isInEconomicPeriod(d, start)) continue;
     const amount = toAmount(tx.amount);
     if (tx.type === "ingreso") ingresosVariables += amount;
     else gastosVariables += amount;
@@ -219,38 +296,32 @@ export function computeSingleMonth(transactions, refDate = new Date(), carryIn =
     disponible,
     usoPct,
     tasaAhorro,
+    periodStart: start,
+    periodEnd: getEconomicPeriodEnd(start),
   };
 }
 
-/**
- * Balance del mes visualizado, arrastrando el restante de meses anteriores.
- * margen = arrastre + ingresos − gastos fijos (recurrentes)
- * restante = margen − gastos variables (queda para el mes siguiente)
- */
-export function computeMonthlyBalance(transactions, refDate = new Date()) {
-  const target = startOfMonth(refDate);
-  let cursor = findEarliestMonth(transactions, target);
-  let carry = 0;
+export function computeMonthlyBalance(transactions, periodStart = getEconomicPeriodStart()) {
+  const target = getEconomicPeriodStart(periodStart);
+  let cursor = findEarliestPeriod(transactions, target);
   let result = computeSingleMonth(transactions, cursor, 0);
 
   while (cursor.getTime() < target.getTime()) {
-    carry = result.restante;
-    cursor = startOfMonth(shiftMonth(cursor, 1));
+    const carry = result.restante;
+    cursor = shiftEconomicPeriod(cursor, 1);
     result = computeSingleMonth(transactions, cursor, carry);
   }
 
   return result;
 }
 
-/** Próximos fijos del mes (recurrentes proyectados), máx. `limit`. */
-export function getMonthlyFixed(transactions, refDate = new Date(), limit = 10) {
+export function getMonthlyFixed(transactions, periodStart = getEconomicPeriodStart(), limit = 12) {
+  const start = getEconomicPeriodStart(periodStart);
   const today = startOfDay(new Date());
-  const viewingCurrent =
-    refDate.getFullYear() === today.getFullYear() &&
-    refDate.getMonth() === today.getMonth();
+  const currentStart = getEconomicPeriodStart(today);
+  const fixed = getActiveFixedTemplates(transactions, start);
 
-  const fixed = getActiveFixedTemplates(transactions, refDate);
-  if (!viewingCurrent) {
+  if (start.getTime() !== currentStart.getTime()) {
     return fixed.slice(0, limit);
   }
 
@@ -258,23 +329,75 @@ export function getMonthlyFixed(transactions, refDate = new Date(), limit = 10) 
   return (upcoming.length > 0 ? upcoming : fixed).slice(0, limit);
 }
 
-/** Gastos variables del mes por categoría (sobres). */
-export function spendByCategory(transactions, refDate = new Date()) {
+/**
+ * Eventos de calendario: cuotas del ciclo actual (+ siguientes si se pide).
+ * @returns {Array<{ date: Date, items: Array }>}
+ */
+export function getCalendarDays(periodStart = getEconomicPeriodStart()) {
+  const start = getEconomicPeriodStart(periodStart);
+  const end = getEconomicPeriodEnd(start);
+  const days = [];
+  for (let t = start.getTime(); t < end.getTime(); t += 24 * 3600 * 1000) {
+    days.push(new Date(t));
+  }
+  return days;
+}
+
+/**
+ * Próximos pagos/cobros fijos desde hoy (horizonte en días).
+ */
+export function getUpcomingFixedEvents(transactions, fromDate = new Date(), horizonDays = 60) {
+  const from = startOfDay(fromDate);
+  const until = new Date(from.getTime() + horizonDays * 24 * 3600 * 1000);
+  const periods = [
+    getEconomicPeriodStart(from),
+    shiftEconomicPeriod(getEconomicPeriodStart(from), 1),
+  ];
+
+  const seen = new Set();
+  const events = [];
+
+  for (const period of periods) {
+    for (const tx of getActiveFixedTemplates(transactions, period)) {
+      if (tx._date < from || tx._date >= until) continue;
+      const key = `${tx.id}-${dateKey(tx._date)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      events.push(tx);
+    }
+  }
+
+  return events.sort((a, b) => a._date - b._date);
+}
+
+/** Agrupa eventos fijos del ciclo por día (yyyy-mm-dd local) */
+export function groupFixedByDay(transactions, periodStart = getEconomicPeriodStart()) {
+  const map = {};
+  for (const tx of getActiveFixedTemplates(transactions, periodStart)) {
+    const key = dateKey(tx._date);
+    if (!map[key]) map[key] = [];
+    map[key].push(tx);
+  }
+  return map;
+}
+
+export function spendByCategory(transactions, periodStart = getEconomicPeriodStart()) {
+  const start = getEconomicPeriodStart(periodStart);
   const map = {};
   for (const tx of transactions) {
     if (tx.type !== "gasto" || tx.isFixed) continue;
     const d = toDate(tx.date);
-    if (!d || !isInMonth(d, refDate)) continue;
+    if (!d || !isInEconomicPeriod(d, start)) continue;
     const cat = tx.category || "Otros";
     map[cat] = (map[cat] || 0) + toAmount(tx.amount);
   }
   return map;
 }
 
-/** Todos los gastos del mes (variables + fijos proyectados) por categoría — gráfico. */
-export function expensesByCategory(transactions, refDate = new Date()) {
-  const map = { ...spendByCategory(transactions, refDate) };
-  for (const tx of getActiveFixedTemplates(transactions, refDate)) {
+export function expensesByCategory(transactions, periodStart = getEconomicPeriodStart()) {
+  const start = getEconomicPeriodStart(periodStart);
+  const map = { ...spendByCategory(transactions, start) };
+  for (const tx of getActiveFixedTemplates(transactions, start)) {
     if (tx.type !== "gasto") continue;
     const cat = tx.category || "Otros";
     map[cat] = (map[cat] || 0) + toAmount(tx.amount);
@@ -282,11 +405,11 @@ export function expensesByCategory(transactions, refDate = new Date()) {
   return map;
 }
 
-/** Movimientos reales registrados en el mes (sin proyecciones). */
-export function getMonthTransactions(transactions, refDate = new Date(), limit = 50) {
+export function getMonthTransactions(transactions, periodStart = getEconomicPeriodStart(), limit = 50) {
+  const start = getEconomicPeriodStart(periodStart);
   return [...transactions]
     .map((tx) => ({ ...tx, _date: toDate(tx.date) }))
-    .filter((tx) => tx._date && isInMonth(tx._date, refDate))
+    .filter((tx) => tx._date && isInEconomicPeriod(tx._date, start))
     .sort((a, b) => b._date - a._date)
     .slice(0, limit);
 }
