@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Lozarcash — gestor financiero personal compartido" />
+  <title>Lozarcash</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "firebase/app": "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js",
+      "firebase/firestore": "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header__brand">
+        <span class="header__mark" aria-hidden="true"></span>
+        <h1 class="header__title">Lozarcash</h1>
+      </div>
+      <p class="header__subtitle">Finanzas compartidas en tiempo real</p>
+    </header>
+
+    <main class="dashboard">
+      <section class="caja-fuerte" aria-labelledby="caja-fuerte-title">
+        <div class="caja-fuerte__top">
+          <h2 id="caja-fuerte-title" class="caja-fuerte__label">Caja Fuerte</h2>
+          <span class="caja-fuerte__period" id="current-period">—</span>
+        </div>
+        <p class="caja-fuerte__amount" id="margen-disponible">— €</p>
+        <p class="caja-fuerte__hint">Margen mensual disponible</p>
+        <div class="termometro" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Uso del margen">
+          <div class="termometro__fill" id="termometro-fill"></div>
+        </div>
+        <div class="caja-fuerte__meta">
+          <span><strong id="ingresos-mes">0 €</strong> ingresos</span>
+          <span><strong id="gastos-fijos-mes">0 €</strong> fijos</span>
+        </div>
+      </section>
+
+      <section class="placeholder-panel" aria-label="Próximos gastos">
+        <h2 class="placeholder-panel__title">Próximos gastos fijos</h2>
+        <p class="placeholder-panel__text">La lista aparecerá cuando conectemos la lógica de cálculo.</p>
+      </section>
+    </main>
+
+    <button type="button" class="fab" id="btn-add-transaction" aria-label="Añadir transacción">
+      <svg class="fab__icon" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+        <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+      </svg>
+    </button>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
