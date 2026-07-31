@@ -47,7 +47,7 @@ function boot() {
     }
   );
 
-  console.log("[Lozarcash] Listo. El margen solo cuenta el mes seleccionado.");
+  console.log("[Lozarcash] Listo: fijos recurrentes, arrastre de saldo y analítica.");
 }
 
 boot();

@@ -65,11 +65,11 @@ categories (map/object con el límite asignado a cada categoría)
 
 [x] Dashboard Principal:
 
-Calcular y mostrar el Balance Mensual (Ingresos totales del mes - Gastos fijos = Margen disponible).
+Calcular y mostrar el Balance Mensual (arrastre del mes anterior + ingresos − gastos fijos recurrentes = margen; margen − variables = restante que arrastra al mes siguiente).
 
 "Termómetro" visual del margen disponible vs gastado.
 
-Lista de próximos 5 gastos fijos a vencer.
+Lista de próximos gastos/ingresos fijos del mes (cuotas recurrentes desde su fecha de alta).
 
 [x] CRUD de Transacciones (El día a día):
 
@@ -85,7 +85,7 @@ Interfaz para asignar el "Margen disponible" a diferentes categorías.
 
 Barras de progreso por categoría que cambien de color (verde -> naranja -> rojo) según se acerquen al límite.
 
-[ ] Analítica e Histórico:
+[x] Analítica e Histórico:
 
 Vista separada o sección inferior con Chart.js.
 

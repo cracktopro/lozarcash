@@ -51,11 +51,16 @@
           <span><strong id="ingresos-mes">0 €</strong> ingresos</span>
           <span><strong id="gastos-fijos-mes">0 €</strong> fijos</span>
         </div>
+        <div class="caja-fuerte__meta caja-fuerte__meta--secondary">
+          <span><strong id="carry-in">0 €</strong> del mes anterior</span>
+          <span>ahorro <strong id="savings-rate">0 %</strong></span>
+        </div>
       </section>
 
       <section class="panel" aria-labelledby="fixed-title">
         <h2 id="fixed-title" class="panel__title">Fijos del mes</h2>
-        <p id="fixed-empty" class="panel__empty">No hay ingresos ni gastos fijos este mes.</p>
+        <p class="panel__summary">Las cuotas fijas se repiten cada mes desde su fecha de alta.</p>
+        <p id="fixed-empty" class="panel__empty">No hay cuotas fijas activas. Márcalas como «fijo» al crearlas.</p>
         <ul id="fixed-list" class="tx-list"></ul>
       </section>
 
@@ -73,6 +78,15 @@
         <h2 id="recent-title" class="panel__title">Movimientos del mes</h2>
         <p id="recent-empty" class="panel__empty">Aún no hay movimientos en este mes.</p>
         <ul id="recent-list" class="tx-list"></ul>
+      </section>
+
+      <section class="panel panel--chart" aria-labelledby="analytics-title">
+        <h2 id="analytics-title" class="panel__title">Analítica del mes</h2>
+        <p class="panel__summary">Distribución de gastos (fijos + variables) por categoría.</p>
+        <p id="chart-empty" class="panel__empty">No hay gastos en este mes para graficar.</p>
+        <div class="chart-wrap">
+          <canvas id="expense-chart" width="320" height="320" aria-label="Gráfico de gastos por categoría"></canvas>
+        </div>
       </section>
     </main>
 
@@ -136,7 +150,7 @@
         <label class="toggle">
           <input type="checkbox" name="isFixed" id="tx-fixed" />
           <span class="toggle__ui" aria-hidden="true"></span>
-          <span class="toggle__label" id="tx-fixed-label">Gasto fijo (cuota mensual)</span>
+          <span class="toggle__label" id="tx-fixed-label">Gasto fijo (se repite cada mes)</span>
         </label>
       </div>
 

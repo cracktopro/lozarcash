@@ -10,6 +10,7 @@ import {
 import {
   computeMonthlyBalance,
   countByMonth,
+  expensesByCategory,
   formatMoney,
   formatPeriod,
   formatShortDate,
@@ -22,6 +23,7 @@ import {
 } from "./calculations.js";
 import { addTransaction, removeTransaction } from "./transactions.js";
 import { saveBudget } from "./budgets.js";
+import { renderExpenseChart } from "./charts.js";
 
 let currentTransactions = [];
 let currentBudget = { monthYear: monthYearKey(), categories: {} };
@@ -112,9 +114,11 @@ export function renderDashboard() {
   const margenEl = document.getElementById("margen-disponible");
   const ingresosEl = document.getElementById("ingresos-mes");
   const fijosEl = document.getElementById("gastos-fijos-mes");
+  const carryEl = document.getElementById("carry-in");
   const fillEl = document.getElementById("termometro-fill");
   const meterEl = fillEl?.closest(".termometro");
   const hintEl = document.querySelector(".caja-fuerte__hint");
+  const savingsEl = document.getElementById("savings-rate");
 
   if (periodEl) periodEl.textContent = formatPeriod(viewMonth);
   if (margenEl) {
@@ -123,8 +127,9 @@ export function renderDashboard() {
   }
   if (ingresosEl) ingresosEl.textContent = formatMoney(balance.ingresos);
   if (fijosEl) fijosEl.textContent = formatMoney(balance.gastosFijos);
+  if (carryEl) carryEl.textContent = formatMoney(balance.carryIn);
   if (hintEl) {
-    hintEl.textContent = `Margen ${formatMoney(balance.margen)} · variables ${formatMoney(balance.gastosVariables)}`;
+    hintEl.textContent = `Margen ${formatMoney(balance.margen)} · variables ${formatMoney(balance.gastosVariables)} · arrastre ${formatMoney(balance.carryIn)}`;
   }
   if (fillEl) {
     fillEl.style.width = `${balance.usoPct}%`;
@@ -133,14 +138,23 @@ export function renderDashboard() {
   if (meterEl) {
     meterEl.setAttribute("aria-valuenow", String(balance.usoPct));
   }
+  if (savingsEl) {
+    const rate = balance.tasaAhorro;
+    savingsEl.textContent = `${rate} %`;
+    savingsEl.classList.toggle("is-negative", rate < 0);
+  }
 
-  renderMonthHint(transactions, balance);
+  renderMonthHint(transactions);
   renderFixedList(getMonthlyFixed(transactions, viewMonth));
   renderRecent(getMonthTransactions(transactions, viewMonth));
   renderEnvelopes(balance);
+  renderExpenseChart(
+    document.getElementById("expense-chart"),
+    expensesByCategory(transactions, viewMonth)
+  );
 }
 
-function renderMonthHint(transactions, balance) {
+function renderMonthHint(transactions) {
   const el = document.getElementById("month-hint");
   if (!el) return;
 
@@ -148,7 +162,6 @@ function renderMonthHint(transactions, balance) {
   const currentKey = monthYearKey(viewMonth);
   const currentCount = counts[currentKey] || 0;
 
-  // Buscar el mes con más movimientos distinto al actual
   let bestKey = null;
   let bestCount = 0;
   for (const [key, n] of Object.entries(counts)) {
@@ -159,17 +172,11 @@ function renderMonthHint(transactions, balance) {
     }
   }
 
-  const fewActivity =
-    currentCount === 0 ||
-    (balance.gastosFijos === 0 &&
-      balance.gastosVariables === 0 &&
-      bestCount > currentCount);
-
-  if (fewActivity && bestKey && bestCount > 0) {
+  if (currentCount === 0 && bestKey && bestCount > 0) {
     const [y, m] = bestKey.split("-").map(Number);
     const label = formatPeriod(new Date(y, m - 1, 1));
     el.hidden = false;
-    el.innerHTML = `Hay <strong>${bestCount}</strong> movimientos en <strong>${escapeHtml(label)}</strong> (este mes solo cuenta lo fechado en ${escapeHtml(formatPeriod(viewMonth))}). <button type="button" class="btn-link" data-goto-month="${bestKey}">Ver ese mes</button>`;
+    el.innerHTML = `No hay movimientos registrados en este mes. Hay <strong>${bestCount}</strong> en <strong>${escapeHtml(label)}</strong>. Los fijos se repiten solos; el saldo restante arrastra. <button type="button" class="btn-link" data-goto-month="${bestKey}">Ver ese mes</button>`;
   } else {
     el.hidden = true;
     el.innerHTML = "";
@@ -196,15 +203,18 @@ function renderFixedList(items) {
       ? "tx-item__amount--ingreso"
       : "tx-item__amount--gasto";
     const kind = isIngreso ? "Ingreso fijo" : "Gasto fijo";
+    const recur = tx._projected
+      ? '<span class="badge">Recurrente</span>'
+      : "";
 
     li.innerHTML = `
       <div class="tx-item__main">
-        <span class="tx-item__concept">${escapeHtml(tx.concept)} <span class="badge badge--muted">${kind}</span></span>
-        <span class="tx-item__meta">${formatShortDate(tx._date)} · ${escapeHtml(tx.category)}</span>
+        <span class="tx-item__concept">${escapeHtml(tx.concept)} <span class="badge badge--muted">${kind}</span> ${recur}</span>
+        <span class="tx-item__meta">Día ${tx._date.getDate()} · ${escapeHtml(tx.category)}</span>
       </div>
       <div class="tx-item__aside">
         <span class="tx-item__amount ${signClass}">${isIngreso ? "+" : "−"}${formatMoney(tx.amount)}</span>
-        <button type="button" class="tx-item__delete" data-id="${escapeHtml(tx.id)}" aria-label="Eliminar">×</button>
+        <button type="button" class="tx-item__delete" data-id="${escapeHtml(tx.id)}" data-fixed="1" aria-label="Eliminar cuota">×</button>
       </div>
     `;
     list.appendChild(li);
@@ -318,8 +328,8 @@ function updateFixedToggleLabel(form) {
   const isIngreso =
     form.querySelector('input[name="txType"]:checked')?.value === "ingreso";
   label.textContent = isIngreso
-    ? "Ingreso fijo (nómina, pensión…)"
-    : "Gasto fijo (cuota mensual)";
+    ? "Ingreso fijo (se repite cada mes)"
+    : "Gasto fijo (se repite cada mes)";
 }
 
 export function initMonthNav() {
@@ -522,7 +532,11 @@ export function initListActions() {
     if (!btn) return;
     const id = btn.dataset.id;
     if (!id) return;
-    if (!confirm("¿Eliminar este movimiento?")) return;
+    const isFixed = btn.dataset.fixed === "1";
+    const msg = isFixed
+      ? "¿Eliminar esta cuota fija? Dejará de aplicarse en todos los meses."
+      : "¿Eliminar este movimiento?";
+    if (!confirm(msg)) return;
     btn.disabled = true;
     try {
       await removeTransaction(id);
