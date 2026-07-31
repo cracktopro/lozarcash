@@ -44,7 +44,7 @@ amount (number)
 
 concept (string)
 
-category (string, ej: "Hogar", "Mascotas", "Huerto y Terraza", "Ocio y Cómics", "Formación", "Suministros", "Supermercado")
+category (string, ej: "Hogar", "Mascotas", "Huerto y Terraza", "Ocio y Cómics", "Formación", "Gasolina", "Supermercado")
 
 date (timestamp)
 
@@ -81,9 +81,9 @@ Listener en tiempo real (onSnapshot) de Firestore para actualizar la vista inmed
 
 [x] Sistema de Estimador / Sobres:
 
-Interfaz para asignar el "Margen disponible" a diferentes categorías.
+Interfaz para asignar el dinero disponible en caja (restante real) a diferentes categorías.
 
-Barras de progreso por categoría que cambien de color (verde -> naranja -> rojo) según se acerquen al límite.
+Barras de progreso por categoría que cambien de color (verde -> naranja -> rojo) solo cuando hay límite asignado y se acerca/supera.
 
 [x] Analítica e Histórico:
 

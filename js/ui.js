@@ -111,37 +111,44 @@ export function renderDashboard() {
   const transactions = currentTransactions;
   const balance = computeMonthlyBalance(transactions, viewMonth);
   const periodEl = document.getElementById("current-period");
-  const margenEl = document.getElementById("margen-disponible");
+  const disponibleEl = document.getElementById("disponible-ahora");
   const ingresosEl = document.getElementById("ingresos-mes");
   const fijosEl = document.getElementById("gastos-fijos-mes");
   const carryEl = document.getElementById("carry-in");
   const fillEl = document.getElementById("termometro-fill");
-  const meterEl = fillEl?.closest(".termometro");
-  const hintEl = document.querySelector(".caja-fuerte__hint");
+  const meterLabel = document.getElementById("hero-meter-label");
+  const footnote = document.getElementById("hero-footnote");
   const savingsEl = document.getElementById("savings-rate");
+  const budgetLead = document.getElementById("budget-lead");
 
   if (periodEl) periodEl.textContent = formatPeriod(viewMonth);
-  if (margenEl) {
-    margenEl.textContent = formatMoney(balance.restante);
-    margenEl.classList.toggle("is-negative", balance.restante < 0);
+  if (disponibleEl) {
+    disponibleEl.textContent = formatMoney(balance.restante);
+    disponibleEl.classList.toggle("is-negative", balance.restante < 0);
   }
   if (ingresosEl) ingresosEl.textContent = formatMoney(balance.ingresos);
   if (fijosEl) fijosEl.textContent = formatMoney(balance.gastosFijos);
   if (carryEl) carryEl.textContent = formatMoney(balance.carryIn);
-  if (hintEl) {
-    hintEl.textContent = `Margen ${formatMoney(balance.margen)} · variables ${formatMoney(balance.gastosVariables)} · arrastre ${formatMoney(balance.carryIn)}`;
-  }
   if (fillEl) {
     fillEl.style.width = `${balance.usoPct}%`;
     fillEl.style.background = termometroColor(balance.usoPct);
   }
-  if (meterEl) {
-    meterEl.setAttribute("aria-valuenow", String(balance.usoPct));
+  if (meterLabel) {
+    meterLabel.textContent =
+      balance.margen > 0
+        ? `Habéis gastado ${formatMoney(balance.gastosVariables)} de ${formatMoney(balance.margen)} para el día a día`
+        : "Aún no hay margen para gastos variables este mes";
+  }
+  if (footnote) {
+    footnote.textContent = `Presupuesto variable ${formatMoney(balance.margen)} · cuotas ${formatMoney(balance.gastosFijos)} · arrastre ${formatMoney(balance.carryIn)}`;
   }
   if (savingsEl) {
     const rate = balance.tasaAhorro;
     savingsEl.textContent = `${rate} %`;
     savingsEl.classList.toggle("is-negative", rate < 0);
+  }
+  if (budgetLead) {
+    budgetLead.textContent = `Ahora mismo os quedan ${formatMoney(balance.restante)} en caja. Asignad límites a las categorías que uséis; el resto queda sin repartir.`;
   }
 
   renderMonthHint(transactions);
@@ -268,44 +275,84 @@ function renderEnvelopes(balance) {
 
   const limits = currentBudget.categories || {};
   const spent = spendByCategory(currentTransactions, viewMonth);
-  const cats = [...new Set([...Object.keys(limits), ...Object.keys(spent)])].sort(
-    (a, b) => a.localeCompare(b, "es")
-  );
+
+  // Prioriza sobres con límite; los gastos sin sobre van al final
+  const withLimit = Object.keys(limits)
+    .filter((c) => Number(limits[c]) > 0)
+    .sort((a, b) => a.localeCompare(b, "es"));
+  const withoutLimit = Object.keys(spent)
+    .filter((c) => !(Number(limits[c]) > 0))
+    .sort((a, b) => a.localeCompare(b, "es"));
+  const cats = [...withLimit, ...withoutLimit];
 
   list.innerHTML = "";
 
   if (cats.length === 0) {
     empty.hidden = false;
-    if (summary) summary.textContent = "";
+    if (summary) {
+      summary.hidden = true;
+      summary.innerHTML = "";
+    }
     return;
   }
   empty.hidden = true;
 
   let assigned = 0;
+  for (const cat of withLimit) {
+    assigned += Number(limits[cat]) || 0;
+  }
+
+  // Libre = dinero real en caja menos lo repartido en sobres
+  const disponible = balance.restante;
+  const sinRepartir = Math.round((disponible - assigned) * 100) / 100;
+
   for (const cat of cats) {
     const limit = Number(limits[cat]) || 0;
     const used = Number(spent[cat]) || 0;
-    assigned += limit;
-    const pct =
-      limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : used > 0 ? 100 : 0;
+    const hasLimit = limit > 0;
+    const pct = hasLimit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+    const remaining = hasLimit ? Math.round((limit - used) * 100) / 100 : null;
 
     const li = document.createElement("li");
-    li.className = "envelope";
+    li.className = hasLimit ? "envelope" : "envelope envelope--open";
+
+    const figures = hasLimit
+      ? `${formatMoney(used)} de ${formatMoney(limit)}`
+      : `${formatMoney(used)} · sin límite`;
+    const status =
+      hasLimit && remaining != null
+        ? remaining >= 0
+          ? `<span class="envelope__left">quedan ${formatMoney(remaining)}</span>`
+          : `<span class="envelope__left envelope__left--over">pasáis ${formatMoney(Math.abs(remaining))}</span>`
+        : `<span class="envelope__left">sin sobre asignado</span>`;
+
+    const barHtml = hasLimit
+      ? `<div class="envelope__bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}">
+           <div class="envelope__fill" style="width:${pct}%;background:${envelopeColor(pct)}"></div>
+         </div>`
+      : `<div class="envelope__bar envelope__bar--muted" aria-hidden="true">
+           <div class="envelope__fill" style="width:${used > 0 ? 28 : 0}%;background:var(--color-ink-faint)"></div>
+         </div>`;
+
     li.innerHTML = `
       <div class="envelope__head">
         <span class="envelope__name">${escapeHtml(cat)}</span>
-        <span class="envelope__figures">${formatMoney(used)} / ${limit > 0 ? formatMoney(limit) : "—"}</span>
+        <span class="envelope__figures">${figures}</span>
       </div>
-      <div class="envelope__bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}">
-        <div class="envelope__fill" style="width:${pct}%;background:${envelopeColor(pct)}"></div>
-      </div>
+      ${barHtml}
+      ${status}
     `;
     list.appendChild(li);
   }
 
   if (summary) {
-    const free = balance.margen - assigned;
-    summary.textContent = `Asignado ${formatMoney(assigned)} · libre ${formatMoney(free)}`;
+    summary.hidden = false;
+    const overClass = sinRepartir < 0 ? " pill--warn" : "";
+    summary.innerHTML = `
+      <span class="pill">En caja <strong>${formatMoney(disponible)}</strong></span>
+      <span class="pill">En sobres <strong>${formatMoney(assigned)}</strong></span>
+      <span class="pill${overClass}">Sin repartir <strong>${formatMoney(sinRepartir)}</strong></span>
+    `;
   }
 }
 
@@ -327,9 +374,7 @@ function updateFixedToggleLabel(form) {
   if (!label || !form) return;
   const isIngreso =
     form.querySelector('input[name="txType"]:checked')?.value === "ingreso";
-  label.textContent = isIngreso
-    ? "Ingreso fijo (se repite cada mes)"
-    : "Gasto fijo (se repite cada mes)";
+  label.textContent = "Se repite cada mes";
 }
 
 export function initMonthNav() {
@@ -524,7 +569,7 @@ export function initBudgetModal() {
 }
 
 export function initListActions() {
-  const root = document.querySelector(".dashboard");
+  const root = document.querySelector(".app");
   if (!root) return;
 
   root.addEventListener("click", async (e) => {

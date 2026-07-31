@@ -4,6 +4,7 @@
  * - Saldo arrastrado mes a mes
  * - Analítica (tasa de ahorro, gastos por categoría)
  */
+import { canonicalCategory } from "./constants.js";
 
 /** Convierte Timestamp de Firestore / Date / string / {seconds} a Date local */
 export function toDate(value) {
@@ -44,7 +45,7 @@ export function normalizeTransaction(raw) {
     isFixed: Boolean(raw.isFixed),
     isBizum: Boolean(raw.isBizum),
     concept: raw.concept ?? "",
-    category: raw.category ?? "Otros",
+    category: canonicalCategory(raw.category),
     addedBy: raw.addedBy ?? "",
   };
 }

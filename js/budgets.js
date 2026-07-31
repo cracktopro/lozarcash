@@ -12,12 +12,23 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase.js";
 import { monthYearKey } from "./calculations.js";
+import { canonicalCategory } from "./constants.js";
 
 const COLLECTION = "budgets";
 
+function normalizeCategories(categories = {}) {
+  const out = {};
+  for (const [cat, val] of Object.entries(categories)) {
+    const key = canonicalCategory(cat);
+    const n = Number(val) || 0;
+    if (n > 0) out[key] = (out[key] || 0) + n;
+  }
+  return out;
+}
+
 /**
  * Escucha el presupuesto del mes actual.
- * @param {(budget: { id?: string, monthYear: string, categories: Record<string, number> } | null) => void} onData
+ * @param {(budget: { id?: string, monthYear: string, categories: Record<string, number> }) => void} onData
  * @param {(err: Error) => void} [onError]
  */
 export function subscribeBudget(onData, onError, refDate = new Date()) {
@@ -40,7 +51,7 @@ export function subscribeBudget(onData, onError, refDate = new Date()) {
       onData({
         id: d.id,
         monthYear: data.monthYear || key,
-        categories: data.categories || {},
+        categories: normalizeCategories(data.categories || {}),
       });
     },
     (err) => {
@@ -56,14 +67,10 @@ export function subscribeBudget(onData, onError, refDate = new Date()) {
  * @param {Record<string, number>} categories
  */
 export async function saveBudget(monthYear, categories) {
-  const clean = {};
-  for (const [cat, val] of Object.entries(categories)) {
-    const n = Number(val);
-    if (n > 0) clean[cat] = n;
-  }
+  const clean = normalizeCategories(categories);
   await setDoc(
     doc(db, COLLECTION, monthYear),
     { monthYear, categories: clean },
-    { merge: true }
+    { merge: false }
   );
 }

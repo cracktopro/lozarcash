@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Lozarcash — gestor financiero personal compartido" />
+  <meta name="description" content="Lozarcash — finanzas compartidas para dos" />
+  <meta name="theme-color" content="#0b3d2e" />
   <title>Lozarcash</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <script type="importmap">
   {
@@ -21,86 +22,125 @@
 </head>
 <body>
   <div class="app">
-    <header class="header">
-      <div class="header__brand">
-        <span class="header__mark" aria-hidden="true"></span>
-        <h1 class="header__title">Lozarcash</h1>
+    <header class="topbar">
+      <div class="topbar__brand">
+        <span class="topbar__mark" aria-hidden="true"></span>
+        <div>
+          <h1 class="topbar__title">Lozarcash</h1>
+          <p class="topbar__tag">Vuestra caja compartida</p>
+        </div>
       </div>
-      <p class="header__subtitle">Finanzas compartidas en tiempo real</p>
+      <div class="month-nav" aria-label="Mes visible">
+        <button type="button" class="month-nav__btn" id="btn-month-prev" aria-label="Mes anterior">‹</button>
+        <span class="month-nav__label" id="current-period">—</span>
+        <button type="button" class="month-nav__btn" id="btn-month-next" aria-label="Mes siguiente">›</button>
+      </div>
     </header>
 
-    <p id="sync-error" class="sync-error" hidden role="alert"></p>
-    <p id="month-hint" class="month-hint" hidden role="status"></p>
+    <p id="sync-error" class="banner banner--error" hidden role="alert"></p>
+    <p id="month-hint" class="banner banner--info" hidden role="status"></p>
 
     <main class="dashboard">
-      <section class="caja-fuerte" aria-labelledby="caja-fuerte-title">
-        <div class="caja-fuerte__top">
-          <h2 id="caja-fuerte-title" class="caja-fuerte__label">Caja Fuerte</h2>
-          <div class="month-nav" aria-label="Mes visible">
-            <button type="button" class="month-nav__btn" id="btn-month-prev" aria-label="Mes anterior">‹</button>
-            <span class="caja-fuerte__period" id="current-period">—</span>
-            <button type="button" class="month-nav__btn" id="btn-month-next" aria-label="Mes siguiente">›</button>
+      <!-- 1. Lo que importa: cuánto os queda -->
+      <section class="hero" aria-labelledby="hero-title">
+        <p class="hero__eyebrow" id="hero-title">Disponible ahora</p>
+        <p class="hero__amount" id="disponible-ahora">— €</p>
+        <p class="hero__lead" id="hero-lead">Lo que os queda este mes tras ingresos, cuotas y gastos</p>
+
+        <div class="hero__meter" aria-hidden="true">
+          <div class="hero__meter-track">
+            <div class="hero__meter-fill" id="termometro-fill"></div>
           </div>
+          <p class="hero__meter-label" id="hero-meter-label">Uso del presupuesto variable</p>
         </div>
-        <p class="caja-fuerte__amount" id="margen-disponible">— €</p>
-        <p class="caja-fuerte__hint">Margen mensual disponible</p>
-        <div class="termometro" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Uso del margen">
-          <div class="termometro__fill" id="termometro-fill"></div>
-        </div>
-        <div class="caja-fuerte__meta">
-          <span><strong id="ingresos-mes">0 €</strong> ingresos</span>
-          <span><strong id="gastos-fijos-mes">0 €</strong> fijos</span>
-        </div>
-        <div class="caja-fuerte__meta caja-fuerte__meta--secondary">
-          <span><strong id="carry-in">0 €</strong> del mes anterior</span>
-          <span>ahorro <strong id="savings-rate">0 %</strong></span>
-        </div>
+
+        <dl class="stat-grid">
+          <div class="stat">
+            <dt>Ingresos</dt>
+            <dd id="ingresos-mes">0 €</dd>
+          </div>
+          <div class="stat">
+            <dt>Cuotas fijas</dt>
+            <dd id="gastos-fijos-mes">0 €</dd>
+          </div>
+          <div class="stat">
+            <dt>Del mes anterior</dt>
+            <dd id="carry-in">0 €</dd>
+          </div>
+          <div class="stat">
+            <dt>Ahorro del mes</dt>
+            <dd id="savings-rate">0 %</dd>
+          </div>
+        </dl>
+
+        <p class="hero__footnote" id="hero-footnote"></p>
       </section>
 
-      <section class="panel" aria-labelledby="fixed-title">
-        <h2 id="fixed-title" class="panel__title">Fijos del mes</h2>
-        <p class="panel__summary">Las cuotas fijas se repiten cada mes desde su fecha de alta.</p>
-        <p id="fixed-empty" class="panel__empty">No hay cuotas fijas activas. Márcalas como «fijo» al crearlas.</p>
-        <ul id="fixed-list" class="tx-list"></ul>
-      </section>
-
-      <section class="panel" aria-labelledby="envelope-title">
-        <div class="panel__head">
-          <h2 id="envelope-title" class="panel__title">Sobres del margen</h2>
-          <button type="button" class="btn-link" id="btn-edit-budgets">Editar</button>
+      <!-- 2. Repartir lo disponible (día a día) -->
+      <section class="section" aria-labelledby="envelope-title">
+        <div class="section__head">
+          <div>
+            <h2 id="envelope-title" class="section__title">Sobres</h2>
+            <p class="section__desc">Repartid lo disponible entre categorías. Solo se pone rojo si hay límite y lo pasáis.</p>
+          </div>
+          <button type="button" class="btn btn--soft" id="btn-edit-budgets">Repartir</button>
         </div>
-        <p id="envelope-summary" class="panel__summary"></p>
-        <p id="envelope-empty" class="panel__empty">Asigna parte del margen a categorías con «Editar».</p>
+        <div id="envelope-summary" class="pill-row" hidden></div>
+        <p id="envelope-empty" class="section__empty">Todavía no habéis creado sobres. Pulsad «Repartir» y asignad parte de lo disponible.</p>
         <ul id="envelope-list" class="envelope-list"></ul>
       </section>
 
-      <section class="panel" aria-labelledby="recent-title">
-        <h2 id="recent-title" class="panel__title">Movimientos del mes</h2>
-        <p id="recent-empty" class="panel__empty">Aún no hay movimientos en este mes.</p>
+      <!-- 3. Actividad reciente -->
+      <section class="section" aria-labelledby="recent-title">
+        <div class="section__head">
+          <div>
+            <h2 id="recent-title" class="section__title">Movimientos</h2>
+            <p class="section__desc">Lo registrado este mes (lo que añadís a mano).</p>
+          </div>
+        </div>
+        <p id="recent-empty" class="section__empty">Nada registrado este mes. Usad el botón + para añadir un gasto o ingreso.</p>
         <ul id="recent-list" class="tx-list"></ul>
       </section>
 
-      <section class="panel panel--chart" aria-labelledby="analytics-title">
-        <h2 id="analytics-title" class="panel__title">Analítica del mes</h2>
-        <p class="panel__summary">Distribución de gastos (fijos + variables) por categoría.</p>
-        <p id="chart-empty" class="panel__empty">No hay gastos en este mes para graficar.</p>
+      <!-- 4. Cuotas que se repiten -->
+      <section class="section" aria-labelledby="fixed-title">
+        <div class="section__head">
+          <div>
+            <h2 id="fixed-title" class="section__title">Cuotas fijas</h2>
+            <p class="section__desc">Se repiten solos cada mes desde el día que las disteis de alta.</p>
+          </div>
+        </div>
+        <p id="fixed-empty" class="section__empty">No hay cuotas fijas. Al crear un movimiento, activad «se repite cada mes».</p>
+        <ul id="fixed-list" class="tx-list"></ul>
+      </section>
+
+      <!-- 5. Analítica -->
+      <section class="section" aria-labelledby="analytics-title">
+        <div class="section__head">
+          <div>
+            <h2 id="analytics-title" class="section__title">Dónde se va el dinero</h2>
+            <p class="section__desc">Gastos del mes por categoría (fijos + variables).</p>
+          </div>
+        </div>
+        <p id="chart-empty" class="section__empty">Aún no hay gastos este mes.</p>
         <div class="chart-wrap">
           <canvas id="expense-chart" width="320" height="320" aria-label="Gráfico de gastos por categoría"></canvas>
         </div>
       </section>
     </main>
 
-    <button type="button" class="fab" id="btn-add-transaction" aria-label="Añadir transacción">
+    <button type="button" class="fab" id="btn-add-transaction" aria-label="Añadir movimiento">
       <svg class="fab__icon" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
         <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
       </svg>
+      <span class="fab__label">Añadir</span>
     </button>
   </div>
 
   <dialog id="modal-transaction" class="modal">
     <form id="form-transaction" class="modal__form">
       <div class="modal__header">
-        <h2 class="modal__title">Nueva transacción</h2>
+        <h2 class="modal__title">Nuevo movimiento</h2>
         <button type="button" class="modal__close" id="btn-close-modal" aria-label="Cerrar">×</button>
       </div>
 
@@ -123,7 +163,7 @@
 
       <label class="field">
         <span class="field__label">Concepto</span>
-        <input class="field__input" type="text" name="concept" id="tx-concept" required maxlength="120" placeholder="Ej. Compra semanal" autocomplete="off" />
+        <input class="field__input" type="text" name="concept" id="tx-concept" required maxlength="120" placeholder="Ej. Compra del súper" autocomplete="off" />
       </label>
 
       <label class="field">
@@ -131,15 +171,16 @@
         <select class="field__input" name="category" id="tx-category" required></select>
       </label>
 
-      <label class="field">
-        <span class="field__label">Fecha</span>
-        <input class="field__input" type="date" name="date" id="tx-date" required />
-      </label>
-
-      <label class="field">
-        <span class="field__label">Quién lo añade</span>
-        <select class="field__input" name="addedBy" id="tx-user" required></select>
-      </label>
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">Fecha</span>
+          <input class="field__input" type="date" name="date" id="tx-date" required />
+        </label>
+        <label class="field">
+          <span class="field__label">Quién</span>
+          <select class="field__input" name="addedBy" id="tx-user" required></select>
+        </label>
+      </div>
 
       <div class="toggles">
         <label class="toggle">
@@ -150,7 +191,7 @@
         <label class="toggle">
           <input type="checkbox" name="isFixed" id="tx-fixed" />
           <span class="toggle__ui" aria-hidden="true"></span>
-          <span class="toggle__label" id="tx-fixed-label">Gasto fijo (se repite cada mes)</span>
+          <span class="toggle__label" id="tx-fixed-label">Se repite cada mes</span>
         </label>
       </div>
 
@@ -166,10 +207,10 @@
   <dialog id="modal-budget" class="modal">
     <form id="form-budget" class="modal__form">
       <div class="modal__header">
-        <h2 class="modal__title">Sobres del mes</h2>
+        <h2 class="modal__title">Repartir disponible</h2>
         <button type="button" class="modal__close" id="btn-close-budget" aria-label="Cerrar">×</button>
       </div>
-      <p class="modal__lead">Reparte el margen disponible entre categorías. Las barras se ponen naranjas/rojas al acercarte al límite.</p>
+      <p class="modal__lead" id="budget-lead">Asignad límites a cada categoría con el dinero que os queda en caja. Dejad a 0 las que no uséis.</p>
       <div id="budget-fields" class="budget-fields"></div>
       <p id="budget-status" class="form-status" hidden role="status"></p>
       <div class="modal__actions">
