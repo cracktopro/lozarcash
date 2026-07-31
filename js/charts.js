@@ -64,14 +64,18 @@ export function renderExpenseChart(canvas, byCategory) {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
+      // La caja .chart-box (aspect-ratio 1) fija el tamaño; no deformar
+      maintainAspectRatio: false,
+      layout: {
+        padding: { top: 4, bottom: 4 },
+      },
       plugins: {
         legend: {
           position: "bottom",
           labels: {
             boxWidth: 12,
-            padding: 12,
-            font: { family: "'Sora', sans-serif", size: 12 },
+            padding: 10,
+            font: { family: "'Sora', sans-serif", size: 11 },
             color: "#e7f0eb",
           },
         },

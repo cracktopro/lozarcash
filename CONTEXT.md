@@ -1,7 +1,7 @@
 # Contexto del Proyecto: Lozarcash - Gestor Financiero Personal
 
 ## 1. Descripción General
-"Lozarcash" es una aplicación web de control de finanzas personales diseñada para ser utilizada por dos personas que comparten gastos. El objetivo es registrar ingresos, gastos fijos y variables, establecer presupuestos por ciclo, consultar un calendario de pagos fijos y analizar el flujo de caja mediante gráficos.
+"Lozarcash" es una aplicación web de control de finanzas personales diseñada para ser utilizada por dos personas que comparten gastos. El objetivo es registrar ingresos, gastos fijos y variables, establecer presupuestos por ciclo (planificación), consultar un calendario de pagos fijos y analizar el flujo de caja mediante gráficos.
 
 La aplicación debe ser rápida, responsiva (adaptada a móviles) y funcionar en tiempo real para que ambos usuarios vean los datos actualizados al instante.
 
@@ -33,7 +33,6 @@ export const db = getFirestore(app);
 ```
 
 ## 4. Estructura de Datos Propuesta (Firestore)
-Para optimizar las lecturas y mantener el sistema ordenado, utilizaremos las siguientes colecciones:
 
 **Colección `transactions` (Todos los movimientos):**
 
@@ -47,7 +46,7 @@ Para optimizar las lecturas y mantener el sistema ordenado, utilizaremos las sig
 - isBizum (boolean)
 - addedBy (string)
 
-**Colección `budgets` (Límites por ciclo económico):**
+**Colección `budgets` (Límites por ciclo económico / planificación):**
 
 - monthYear (string, ej: "2026-07" = ciclo que empieza el 24/07)
 - categories (map/object con el límite asignado a cada categoría)
@@ -60,13 +59,21 @@ El ciclo no es el mes civil (1–30/31), sino:
 
 Así se alinean los cobros fijos (p. ej. días 24 y 26) con el periodo de gasto. Navegación ‹ › cambia de ciclo; los fijos se proyectan dentro del ciclo según su día del mes.
 
+## 4.2 Layout UI
+- **Móvil:** una columna (Disponible → Gráfico de gastos → Planificación → Movimientos → Cuotas → Calendario).
+- **Tablet / escritorio (16:9):**
+  - Fila superior: **Disponible ahora** | **Gráfico de gastos**
+  - Fila inferior (4 columnas): **Planificación** | **Movimientos** | **Cuotas** | **Calendario de pagos**
+- Tema oscuro; tipografías Outfit + Sora.
+- El gráfico doughnut vive en un contenedor cuadrado (`aspect-ratio: 1`) para no deformarse.
+
 ## 5. Funcionalidades Core (Checklist)
-[x] UI/UX Base: layout tipo dashboard, paleta limpia, móvil primero.
+[x] UI/UX Base: dashboard responsivo, tema oscuro, layout 2+4 en web.
 
 [x] Dashboard Principal:
 - Balance del ciclo (arrastre + ingresos − fijos recurrentes = margen; margen − variables = restante).
 - Termómetro del presupuesto variable.
-- Lista de cuotas fijas del ciclo.
+- Lista de cuotas del ciclo.
 
 [x] CRUD de Transacciones:
 - Modal rápido (fecha por defecto hoy / día del ciclo).
@@ -74,7 +81,7 @@ Así se alinean los cobros fijos (p. ej. días 24 y 26) con el periodo de gasto.
 - Listener en tiempo real (`onSnapshot`).
 - Eliminar movimientos y cuotas (la edición in-place queda como mejora opcional).
 
-[x] Sistema de Sobres:
+[x] Planificación (sobres):
 - Asignar el **disponible en caja** (restante real) a categorías.
 - Barras verde → naranja → rojo solo si hay límite.
 
@@ -83,7 +90,7 @@ Así se alinean los cobros fijos (p. ej. días 24 y 26) con el periodo de gasto.
 - Lista de próximos pagos fijos con importe.
 
 [x] Analítica e Histórico:
-- Chart.js (tarta de gastos del ciclo).
+- Chart.js — **Gráfico de gastos** del ciclo (proporción circular correcta).
 - Selector de ciclo económico.
 - Tasa de ahorro del ciclo visualizado.
 

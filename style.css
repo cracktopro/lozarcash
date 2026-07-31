@@ -500,9 +500,25 @@ body {
 }
 
 .chart-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 0.35rem 0 0.15rem;
+}
+
+/* Caja cuadrada: evita que Chart.js deforme el doughnut */
+.chart-box {
   position: relative;
-  max-width: 17rem;
-  margin: 0.35rem auto 0.15rem;
+  width: min(100%, 17rem);
+  aspect-ratio: 1 / 1;
+  max-height: 17rem;
+}
+
+.chart-box canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* —— Calendario —— */
@@ -1094,17 +1110,13 @@ body {
 
   .panel-analytics .chart-wrap {
     flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    max-width: none;
-    margin: 0;
     min-height: 12rem;
+    margin: 0;
   }
 
-  .panel-analytics .chart-wrap canvas {
-    max-width: min(100%, 280px);
-    max-height: 260px;
+  .panel-analytics .chart-box {
+    width: min(100%, 16.5rem);
+    max-height: 16.5rem;
   }
 
   .stat-grid {
@@ -1202,9 +1214,9 @@ body {
     max-height: none;
   }
 
-  .panel-analytics .chart-wrap canvas {
-    max-width: min(100%, 320px);
-    max-height: 300px;
+  .panel-analytics .chart-box {
+    width: min(100%, 18rem);
+    max-height: 18rem;
   }
 }
 
