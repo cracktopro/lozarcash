@@ -46,7 +46,7 @@
     <p id="month-hint" class="banner banner--info" hidden role="status"></p>
 
     <main class="dashboard">
-      <!-- 1. Lo que importa: cuánto os queda -->
+      <!-- Fila superior (web/tablet): Disponible | Gráfico -->
       <section class="hero panel-hero" aria-labelledby="hero-title">
         <p class="hero__eyebrow" id="hero-title">Disponible ahora</p>
         <p class="hero__amount" id="disponible-ahora">— €</p>
@@ -81,70 +81,66 @@
         <p class="hero__footnote" id="hero-footnote"></p>
       </section>
 
-      <!-- 2. Calendario de pagos fijos -->
+      <section class="section panel-analytics" aria-labelledby="analytics-title">
+        <div class="section__head">
+          <div>
+            <h2 id="analytics-title" class="section__title">Gráfico de gastos</h2>
+            <p class="section__desc">Distribución del ciclo por categoría (fijos + variables).</p>
+          </div>
+        </div>
+        <p id="chart-empty" class="section__empty">Aún no hay gastos en este ciclo.</p>
+        <div class="chart-wrap">
+          <canvas id="expense-chart" width="320" height="320" aria-label="Gráfico de gastos por categoría"></canvas>
+        </div>
+      </section>
+
+      <!-- Fila inferior (web/tablet): 4 columnas -->
+      <section class="section panel-envelopes" aria-labelledby="envelope-title">
+        <div class="section__head">
+          <div>
+            <h2 id="envelope-title" class="section__title">Planificación</h2>
+            <p class="section__desc">Repartid lo disponible entre categorías.</p>
+          </div>
+          <button type="button" class="btn btn--soft" id="btn-edit-budgets">Repartir</button>
+        </div>
+        <div id="envelope-summary" class="pill-row" hidden></div>
+        <p id="envelope-empty" class="section__empty">Todavía no hay planificación. Pulsad «Repartir».</p>
+        <ul id="envelope-list" class="envelope-list"></ul>
+      </section>
+
+      <section class="section panel-movements" aria-labelledby="recent-title">
+        <div class="section__head">
+          <div>
+            <h2 id="recent-title" class="section__title">Movimientos</h2>
+            <p class="section__desc">Registrados en este ciclo (24 → 24).</p>
+          </div>
+        </div>
+        <p id="recent-empty" class="section__empty">Nada registrado. Usad el botón + para añadir.</p>
+        <ul id="recent-list" class="tx-list"></ul>
+      </section>
+
+      <section class="section panel-fixed" aria-labelledby="fixed-title">
+        <div class="section__head">
+          <div>
+            <h2 id="fixed-title" class="section__title">Cuotas</h2>
+            <p class="section__desc">Fijos del ciclo. Eliminar quita la recurrencia.</p>
+          </div>
+        </div>
+        <p id="fixed-empty" class="section__empty">No hay cuotas. Activad «se repite cada mes» al crear.</p>
+        <ul id="fixed-list" class="tx-list"></ul>
+      </section>
+
       <section class="section panel-calendar" aria-labelledby="calendar-title">
         <div class="section__head">
           <div>
             <h2 id="calendar-title" class="section__title">Calendario de pagos</h2>
-            <p class="section__desc">Cuotas fijas de este ciclo. Verde = ingreso, teja = pago.</p>
+            <p class="section__desc">Verde = ingreso, teja = pago.</p>
           </div>
         </div>
         <p id="calendar-upcoming-total" class="cal-summary"></p>
         <div id="calendar-grid" class="cal-grid" role="list"></div>
         <p id="calendar-empty" class="section__empty">No hay cuotas fijas en este ciclo.</p>
         <ul id="calendar-events" class="cal-events"></ul>
-      </section>
-
-      <!-- 3. Repartir lo disponible -->
-      <section class="section panel-envelopes" aria-labelledby="envelope-title">
-        <div class="section__head">
-          <div>
-            <h2 id="envelope-title" class="section__title">Sobres</h2>
-            <p class="section__desc">Repartid lo disponible entre categorías. Solo se pone rojo si hay límite y lo pasáis.</p>
-          </div>
-          <button type="button" class="btn btn--soft" id="btn-edit-budgets">Repartir</button>
-        </div>
-        <div id="envelope-summary" class="pill-row" hidden></div>
-        <p id="envelope-empty" class="section__empty">Todavía no habéis creado sobres. Pulsad «Repartir» y asignad parte de lo disponible.</p>
-        <ul id="envelope-list" class="envelope-list"></ul>
-      </section>
-
-      <!-- 4. Actividad del ciclo -->
-      <section class="section panel-movements" aria-labelledby="recent-title">
-        <div class="section__head">
-          <div>
-            <h2 id="recent-title" class="section__title">Movimientos</h2>
-            <p class="section__desc">Registrados en este ciclo económico (24 → 24).</p>
-          </div>
-        </div>
-        <p id="recent-empty" class="section__empty">Nada registrado en este ciclo. Usad el botón + para añadir.</p>
-        <ul id="recent-list" class="tx-list"></ul>
-      </section>
-
-      <!-- 5. Cuotas (lista compacta) -->
-      <section class="section panel-fixed" aria-labelledby="fixed-title">
-        <div class="section__head">
-          <div>
-            <h2 id="fixed-title" class="section__title">Todas las cuotas</h2>
-            <p class="section__desc">Ingresos y gastos fijos del ciclo. Eliminar quita la recurrencia.</p>
-          </div>
-        </div>
-        <p id="fixed-empty" class="section__empty">No hay cuotas fijas. Al crear un movimiento, activad «se repite cada mes».</p>
-        <ul id="fixed-list" class="tx-list"></ul>
-      </section>
-
-      <!-- 6. Analítica -->
-      <section class="section panel-analytics" aria-labelledby="analytics-title">
-        <div class="section__head">
-          <div>
-            <h2 id="analytics-title" class="section__title">Dónde se va el dinero</h2>
-            <p class="section__desc">Gastos del ciclo por categoría (fijos + variables).</p>
-          </div>
-        </div>
-        <p id="chart-empty" class="section__empty">Aún no hay gastos este mes.</p>
-        <div class="chart-wrap">
-          <canvas id="expense-chart" width="320" height="320" aria-label="Gráfico de gastos por categoría"></canvas>
-        </div>
       </section>
     </main>
 

@@ -1039,51 +1039,14 @@ body {
   color: var(--color-ink);
 }
 
-/* —— Tablet / desktop: aprovechar ancho —— */
+/* —— Tablet + desktop: 2 paneles arriba + 4 columnas —— */
 @media (min-width: 760px) {
   :root {
-    --max-w: 720px;
+    --max-w: min(100% - 2rem, 1280px);
   }
 
-  .dashboard {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "hero hero"
-      "calendar envelopes"
-      "movements fixed"
-      "analytics analytics";
-    gap: 1.1rem;
-    align-items: start;
-  }
-
-  .panel-hero { grid-area: hero; }
-  .panel-calendar { grid-area: calendar; }
-  .panel-envelopes { grid-area: envelopes; }
-  .panel-movements { grid-area: movements; }
-  .panel-fixed { grid-area: fixed; }
-  .panel-analytics { grid-area: analytics; }
-
-  .stat-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  .panel-analytics .chart-wrap {
-    max-width: 20rem;
-  }
-
-  .cal-events {
-    max-height: 14rem;
-  }
-
-  .fab {
-    right: max(var(--space), calc(50% - var(--max-w) / 2 + var(--space)));
-  }
-}
-
-@media (min-width: 1100px) {
-  :root {
-    --max-w: 1140px;
+  .app {
+    max-width: var(--max-w);
   }
 
   .topbar {
@@ -1102,55 +1065,152 @@ body {
   }
 
   .dashboard {
-    grid-template-columns: 1.15fr 1fr 1fr;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-template-areas:
-      "hero hero calendar"
-      "envelopes movements fixed"
-      "analytics analytics calendar";
-    gap: 1.25rem;
+      "hero hero analytics analytics"
+      "envelopes movements fixed calendar";
+    gap: 1rem;
+    align-items: stretch;
+    min-height: calc(100dvh - 8.5rem);
   }
 
-  .panel-calendar {
-    grid-row: span 2;
+  .panel-hero { grid-area: hero; }
+  .panel-analytics { grid-area: analytics; }
+  .panel-envelopes { grid-area: envelopes; }
+  .panel-movements { grid-area: movements; }
+  .panel-fixed { grid-area: fixed; }
+  .panel-calendar { grid-area: calendar; }
+
+  .panel-hero,
+  .panel-analytics {
+    min-height: 17rem;
+  }
+
+  .panel-analytics {
     display: flex;
     flex-direction: column;
   }
 
+  .panel-analytics .chart-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: none;
+    margin: 0;
+    min-height: 12rem;
+  }
+
+  .panel-analytics .chart-wrap canvas {
+    max-width: min(100%, 280px);
+    max-height: 260px;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* Columnas largas: scroll interno */
+  .panel-envelopes,
+  .panel-movements,
+  .panel-fixed,
+  .panel-calendar {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: calc(100dvh - 26rem);
+    overflow: hidden;
+  }
+
+  .panel-envelopes .envelope-list,
+  .panel-movements .tx-list,
+  .panel-fixed .tx-list,
   .panel-calendar .cal-events {
     flex: 1;
+    min-height: 0;
     max-height: none;
+    overflow: auto;
   }
 
-  .hero {
-    min-height: 100%;
+  .panel-calendar .cal-grid {
+    flex-shrink: 0;
   }
 
-  .panel-analytics {
-    display: grid;
-    grid-template-columns: 1fr 1.1fr;
-    gap: 1rem;
-    align-items: center;
+  .section__desc {
+    max-width: none;
   }
 
-  .panel-analytics .section__head {
-    grid-column: 1 / -1;
-    margin-bottom: 0;
+  .section__title {
+    font-size: 1.05rem;
   }
 
-  .panel-analytics .section__empty,
-  .panel-analytics #chart-empty {
-    grid-column: 1 / -1;
+  .section {
+    padding: 0.95rem 0.8rem 0.85rem;
   }
 
-  .panel-analytics .chart-wrap {
-    margin: 0 auto;
-    max-width: 18rem;
+  .fab {
+    right: max(var(--space), calc(50% - var(--max-w) / 2 + var(--space)));
   }
 }
 
-@media (min-width: 1400px) {
+/* Tablet estrecha: mismas 4 columnas, tipografía más compacta */
+@media (min-width: 760px) and (max-width: 1099px) {
+  .dashboard {
+    gap: 0.75rem;
+  }
+
+  .section__title {
+    font-size: 0.95rem;
+  }
+
+  .section__desc {
+    font-size: 0.7rem;
+  }
+
+  .cal-day__num {
+    font-size: 0.68rem;
+  }
+
+  .stat-grid {
+    gap: 0.4rem;
+  }
+
+  .stat dd {
+    font-size: 0.88rem;
+  }
+
+  .hero__amount {
+    font-size: clamp(2rem, 5vw, 2.6rem);
+  }
+}
+
+@media (min-width: 1100px) {
   :root {
-    --max-w: 1320px;
+    --max-w: min(100% - 2.5rem, 1440px);
+  }
+
+  .dashboard {
+    gap: 1.15rem;
+    grid-template-rows: minmax(18rem, auto) minmax(0, 1fr);
+  }
+
+  .panel-envelopes,
+  .panel-movements,
+  .panel-fixed,
+  .panel-calendar {
+    max-height: none;
+  }
+
+  .panel-analytics .chart-wrap canvas {
+    max-width: min(100%, 320px);
+    max-height: 300px;
+  }
+}
+
+@media (min-width: 1600px) {
+  :root {
+    --max-w: min(100% - 3rem, 1680px);
   }
 }
 
