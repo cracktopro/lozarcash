@@ -61,9 +61,9 @@ monthYear (string, ej: "2026-07")
 categories (map/object con el límite asignado a cada categoría)
 
 5. Funcionalidades Core (Checklist de Desarrollo para Cursor)
-[ ] UI/UX Base: Crear un index.html con un layout tipo Dashboard, usando CSS Grid/Flexbox. Paleta de colores limpia (modo claro/oscuro opcional).
+[x] UI/UX Base: Crear un index.html con un layout tipo Dashboard, usando CSS Grid/Flexbox. Paleta de colores limpia (modo claro/oscuro opcional).
 
-[ ] Dashboard Principal:
+[x] Dashboard Principal:
 
 Calcular y mostrar el Balance Mensual (Ingresos totales del mes - Gastos fijos = Margen disponible).
 
@@ -71,7 +71,7 @@ Calcular y mostrar el Balance Mensual (Ingresos totales del mes - Gastos fijos =
 
 Lista de próximos 5 gastos fijos a vencer.
 
-[ ] CRUD de Transacciones (El día a día):
+[x] CRUD de Transacciones (El día a día):
 
 Modal rápido para añadir nueva transacción (Fecha por defecto: hoy).
 

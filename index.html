@@ -28,6 +28,8 @@
       <p class="header__subtitle">Finanzas compartidas en tiempo real</p>
     </header>
 
+    <p id="sync-error" class="sync-error" hidden role="alert"></p>
+
     <main class="dashboard">
       <section class="caja-fuerte" aria-labelledby="caja-fuerte-title">
         <div class="caja-fuerte__top">
@@ -45,9 +47,16 @@
         </div>
       </section>
 
-      <section class="placeholder-panel" aria-label="Próximos gastos">
-        <h2 class="placeholder-panel__title">Próximos gastos fijos</h2>
-        <p class="placeholder-panel__text">La lista aparecerá cuando conectemos la lógica de cálculo.</p>
+      <section class="panel" aria-labelledby="fixed-title">
+        <h2 id="fixed-title" class="panel__title">Próximos gastos fijos</h2>
+        <p id="fixed-empty" class="panel__empty">No hay gastos fijos este mes.</p>
+        <ul id="fixed-list" class="tx-list"></ul>
+      </section>
+
+      <section class="panel" aria-labelledby="recent-title">
+        <h2 id="recent-title" class="panel__title">Últimos movimientos</h2>
+        <p id="recent-empty" class="panel__empty">Aún no hay movimientos. Pulsa + para añadir el primero.</p>
+        <ul id="recent-list" class="tx-list"></ul>
       </section>
     </main>
 
@@ -57,6 +66,72 @@
       </svg>
     </button>
   </div>
+
+  <dialog id="modal-transaction" class="modal">
+    <form id="form-transaction" class="modal__form">
+      <div class="modal__header">
+        <h2 class="modal__title">Nueva transacción</h2>
+        <button type="button" class="modal__close" id="btn-close-modal" aria-label="Cerrar">×</button>
+      </div>
+
+      <fieldset class="segmented">
+        <legend class="sr-only">Tipo</legend>
+        <label class="segmented__option">
+          <input type="radio" name="type" value="gasto" id="tx-type-gasto" checked />
+          <span>Gasto</span>
+        </label>
+        <label class="segmented__option">
+          <input type="radio" name="type" value="ingreso" id="tx-type-ingreso" />
+          <span>Ingreso</span>
+        </label>
+      </fieldset>
+
+      <label class="field">
+        <span class="field__label">Importe (€)</span>
+        <input class="field__input" type="number" name="amount" id="tx-amount" min="0.01" step="0.01" required inputmode="decimal" placeholder="0,00" />
+      </label>
+
+      <label class="field">
+        <span class="field__label">Concepto</span>
+        <input class="field__input" type="text" name="concept" id="tx-concept" required maxlength="120" placeholder="Ej. Compra semanal" autocomplete="off" />
+      </label>
+
+      <label class="field">
+        <span class="field__label">Categoría</span>
+        <select class="field__input" name="category" id="tx-category" required></select>
+      </label>
+
+      <label class="field">
+        <span class="field__label">Fecha</span>
+        <input class="field__input" type="date" name="date" id="tx-date" required />
+      </label>
+
+      <label class="field">
+        <span class="field__label">Quién lo añade</span>
+        <select class="field__input" name="addedBy" id="tx-user" required></select>
+      </label>
+
+      <div class="toggles">
+        <label class="toggle">
+          <input type="checkbox" name="isBizum" id="tx-bizum" />
+          <span class="toggle__ui" aria-hidden="true"></span>
+          <span class="toggle__label">Bizum</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" name="isFixed" id="tx-fixed" />
+          <span class="toggle__ui" aria-hidden="true"></span>
+          <span class="toggle__label">Gasto fijo</span>
+        </label>
+      </div>
+
+      <p id="form-status" class="form-status" hidden role="status"></p>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" id="btn-cancel-modal">Cancelar</button>
+        <button type="submit" class="btn btn--primary">Guardar</button>
+      </div>
+    </form>
+  </dialog>
 
   <script type="module" src="app.js"></script>
 </body>
