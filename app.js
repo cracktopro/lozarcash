@@ -1,6 +1,5 @@
 /**
  * Lozarcash — entry point
- * Fase 3: fix cálculos, ingresos fijos, sobres y sync budgets
  */
 import { subscribeTransactions } from "./js/transactions.js";
 import { subscribeBudget } from "./js/budgets.js";
@@ -8,15 +7,35 @@ import {
   initModal,
   initBudgetModal,
   initListActions,
+  initMonthNav,
+  onViewMonthChange,
+  getViewMonth,
   setTransactions,
   setBudget,
   showSyncError,
 } from "./js/ui.js";
 
 function boot() {
+  initMonthNav();
   initModal();
   initBudgetModal();
   initListActions();
+
+  let unsubBudget = null;
+
+  function watchBudget(monthDate) {
+    if (unsubBudget) unsubBudget();
+    unsubBudget = subscribeBudget(
+      (budget) => setBudget(budget),
+      (err) => {
+        showSyncError(`No se pudo sincronizar presupuestos: ${err.message}`);
+      },
+      monthDate
+    );
+  }
+
+  onViewMonthChange(watchBudget);
+  watchBudget(getViewMonth());
 
   subscribeTransactions(
     (transactions) => {
@@ -28,16 +47,7 @@ function boot() {
     }
   );
 
-  subscribeBudget(
-    (budget) => {
-      setBudget(budget);
-    },
-    (err) => {
-      showSyncError(`No se pudo sincronizar presupuestos: ${err.message}`);
-    }
-  );
-
-  console.log("[Lozarcash] Dashboard, fijos e ingresos fijos activos.");
+  console.log("[Lozarcash] Listo. El margen solo cuenta el mes seleccionado.");
 }
 
 boot();

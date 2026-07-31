@@ -30,12 +30,17 @@
     </header>
 
     <p id="sync-error" class="sync-error" hidden role="alert"></p>
+    <p id="month-hint" class="month-hint" hidden role="status"></p>
 
     <main class="dashboard">
       <section class="caja-fuerte" aria-labelledby="caja-fuerte-title">
         <div class="caja-fuerte__top">
           <h2 id="caja-fuerte-title" class="caja-fuerte__label">Caja Fuerte</h2>
-          <span class="caja-fuerte__period" id="current-period">—</span>
+          <div class="month-nav" aria-label="Mes visible">
+            <button type="button" class="month-nav__btn" id="btn-month-prev" aria-label="Mes anterior">‹</button>
+            <span class="caja-fuerte__period" id="current-period">—</span>
+            <button type="button" class="month-nav__btn" id="btn-month-next" aria-label="Mes siguiente">›</button>
+          </div>
         </div>
         <p class="caja-fuerte__amount" id="margen-disponible">— €</p>
         <p class="caja-fuerte__hint">Margen mensual disponible</p>
@@ -65,8 +70,8 @@
       </section>
 
       <section class="panel" aria-labelledby="recent-title">
-        <h2 id="recent-title" class="panel__title">Últimos movimientos</h2>
-        <p id="recent-empty" class="panel__empty">Aún no hay movimientos. Pulsa + para añadir el primero.</p>
+        <h2 id="recent-title" class="panel__title">Movimientos del mes</h2>
+        <p id="recent-empty" class="panel__empty">Aún no hay movimientos en este mes.</p>
         <ul id="recent-list" class="tx-list"></ul>
       </section>
     </main>

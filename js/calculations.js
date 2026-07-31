@@ -94,6 +94,23 @@ export function monthYearKey(date = new Date()) {
   return `${y}-${m}`;
 }
 
+/** Primer día del mes desplazado N meses */
+export function shiftMonth(date, delta) {
+  return new Date(date.getFullYear(), date.getMonth() + delta, 1, 12, 0, 0, 0);
+}
+
+/** Cuenta movimientos por monthYear (yyyy-mm), útil para avisos */
+export function countByMonth(transactions) {
+  const map = {};
+  for (const tx of transactions) {
+    const d = toDate(tx.date);
+    if (!d) continue;
+    const key = monthYearKey(d);
+    map[key] = (map[key] || 0) + 1;
+  }
+  return map;
+}
+
 /**
  * Balance del mes (CONTEXT):
  * ingresos totales − gastos fijos = margen
@@ -172,11 +189,11 @@ export function spendByCategory(transactions, refDate = new Date()) {
   return map;
 }
 
-/** Últimos movimientos (cualquier mes), más recientes primero */
-export function getRecentTransactions(transactions, limit = 10) {
+/** Movimientos del mes de referencia, más recientes primero */
+export function getMonthTransactions(transactions, refDate = new Date(), limit = 50) {
   return [...transactions]
     .map((tx) => ({ ...tx, _date: toDate(tx.date) }))
-    .filter((tx) => tx._date)
+    .filter((tx) => tx._date && isInMonth(tx._date, refDate))
     .sort((a, b) => b._date - a._date)
     .slice(0, limit);
 }

@@ -160,6 +160,47 @@ body {
   font-size: 0.8rem;
   color: var(--color-ink-muted);
   text-transform: capitalize;
+  min-width: 7.5rem;
+  text-align: center;
+}
+
+.month-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.month-nav__btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.month-nav__btn:hover {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.month-hint {
+  background: #fff8eb;
+  border: 1px solid #f5d0a9;
+  color: #7a3e0c;
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.85rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.month-hint .btn-link {
+  color: #9a3412;
+  display: inline;
+  padding: 0;
 }
 
 .caja-fuerte__amount {

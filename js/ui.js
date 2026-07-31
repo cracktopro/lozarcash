@@ -9,26 +9,45 @@ import {
 } from "./constants.js";
 import {
   computeMonthlyBalance,
+  countByMonth,
   formatMoney,
   formatPeriod,
   formatShortDate,
-  getRecentTransactions,
+  getMonthTransactions,
   getMonthlyFixed,
   monthYearKey,
+  shiftMonth,
   spendByCategory,
+  startOfMonth,
 } from "./calculations.js";
 import { addTransaction, removeTransaction } from "./transactions.js";
 import { saveBudget } from "./budgets.js";
 
 let currentTransactions = [];
 let currentBudget = { monthYear: monthYearKey(), categories: {} };
+/** Mes que se está visualizando (día 1 a mediodía) */
+let viewMonth = startOfMonth(new Date());
+/** Callback para que app.js re-suscriba el presupuesto del mes */
+let monthChangeHandler = null;
 
-function todayInputValue() {
-  const d = new Date();
+function todayInputValue(ref = new Date()) {
+  const d = ref;
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+/** Día sugerido al crear tx: hoy si el mes visto es el actual; si no, día 1 de ese mes */
+function defaultDateForView() {
+  const now = new Date();
+  if (
+    viewMonth.getFullYear() === now.getFullYear() &&
+    viewMonth.getMonth() === now.getMonth()
+  ) {
+    return todayInputValue(now);
+  }
+  return todayInputValue(viewMonth);
 }
 
 function getStoredUser() {
@@ -59,19 +78,36 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
+export function onViewMonthChange(fn) {
+  monthChangeHandler = fn;
+}
+
+export function getViewMonth() {
+  return viewMonth;
+}
+
+export function setViewMonth(date) {
+  viewMonth = startOfMonth(date);
+  if (monthChangeHandler) monthChangeHandler(viewMonth);
+  renderDashboard();
+}
+
 export function setTransactions(transactions) {
   currentTransactions = transactions;
   renderDashboard();
 }
 
 export function setBudget(budget) {
-  currentBudget = budget || { monthYear: monthYearKey(), categories: {} };
+  currentBudget = budget || {
+    monthYear: monthYearKey(viewMonth),
+    categories: {},
+  };
   renderDashboard();
 }
 
 export function renderDashboard() {
   const transactions = currentTransactions;
-  const balance = computeMonthlyBalance(transactions);
+  const balance = computeMonthlyBalance(transactions, viewMonth);
   const periodEl = document.getElementById("current-period");
   const margenEl = document.getElementById("margen-disponible");
   const ingresosEl = document.getElementById("ingresos-mes");
@@ -80,7 +116,7 @@ export function renderDashboard() {
   const meterEl = fillEl?.closest(".termometro");
   const hintEl = document.querySelector(".caja-fuerte__hint");
 
-  if (periodEl) periodEl.textContent = formatPeriod();
+  if (periodEl) periodEl.textContent = formatPeriod(viewMonth);
   if (margenEl) {
     margenEl.textContent = formatMoney(balance.restante);
     margenEl.classList.toggle("is-negative", balance.restante < 0);
@@ -98,9 +134,46 @@ export function renderDashboard() {
     meterEl.setAttribute("aria-valuenow", String(balance.usoPct));
   }
 
-  renderFixedList(getMonthlyFixed(transactions));
-  renderRecent(getRecentTransactions(transactions));
+  renderMonthHint(transactions, balance);
+  renderFixedList(getMonthlyFixed(transactions, viewMonth));
+  renderRecent(getMonthTransactions(transactions, viewMonth));
   renderEnvelopes(balance);
+}
+
+function renderMonthHint(transactions, balance) {
+  const el = document.getElementById("month-hint");
+  if (!el) return;
+
+  const counts = countByMonth(transactions);
+  const currentKey = monthYearKey(viewMonth);
+  const currentCount = counts[currentKey] || 0;
+
+  // Buscar el mes con más movimientos distinto al actual
+  let bestKey = null;
+  let bestCount = 0;
+  for (const [key, n] of Object.entries(counts)) {
+    if (key === currentKey) continue;
+    if (n > bestCount) {
+      bestCount = n;
+      bestKey = key;
+    }
+  }
+
+  const fewActivity =
+    currentCount === 0 ||
+    (balance.gastosFijos === 0 &&
+      balance.gastosVariables === 0 &&
+      bestCount > currentCount);
+
+  if (fewActivity && bestKey && bestCount > 0) {
+    const [y, m] = bestKey.split("-").map(Number);
+    const label = formatPeriod(new Date(y, m - 1, 1));
+    el.hidden = false;
+    el.innerHTML = `Hay <strong>${bestCount}</strong> movimientos en <strong>${escapeHtml(label)}</strong> (este mes solo cuenta lo fechado en ${escapeHtml(formatPeriod(viewMonth))}). <button type="button" class="btn-link" data-goto-month="${bestKey}">Ver ese mes</button>`;
+  } else {
+    el.hidden = true;
+    el.innerHTML = "";
+  }
 }
 
 function renderFixedList(items) {
@@ -146,6 +219,7 @@ function renderRecent(items) {
   list.innerHTML = "";
   if (items.length === 0) {
     empty.hidden = false;
+    empty.textContent = `No hay movimientos en ${formatPeriod(viewMonth)}.`;
     return;
   }
   empty.hidden = true;
@@ -159,9 +233,7 @@ function renderRecent(items) {
       : "tx-item__amount--gasto";
     const badges = [
       tx.isBizum ? '<span class="badge">Bizum</span>' : "",
-      tx.isFixed
-        ? `<span class="badge badge--muted">${isIngreso ? "Fijo" : "Fijo"}</span>`
-        : "",
+      tx.isFixed ? '<span class="badge badge--muted">Fijo</span>' : "",
     ].join("");
 
     li.innerHTML = `
@@ -185,7 +257,7 @@ function renderEnvelopes(balance) {
   if (!list || !empty) return;
 
   const limits = currentBudget.categories || {};
-  const spent = spendByCategory(currentTransactions);
+  const spent = spendByCategory(currentTransactions, viewMonth);
   const cats = [...new Set([...Object.keys(limits), ...Object.keys(spent)])].sort(
     (a, b) => a.localeCompare(b, "es")
   );
@@ -204,7 +276,8 @@ function renderEnvelopes(balance) {
     const limit = Number(limits[cat]) || 0;
     const used = Number(spent[cat]) || 0;
     assigned += limit;
-    const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : used > 0 ? 100 : 0;
+    const pct =
+      limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : used > 0 ? 100 : 0;
 
     const li = document.createElement("li");
     li.className = "envelope";
@@ -244,7 +317,23 @@ function updateFixedToggleLabel(form) {
   if (!label || !form) return;
   const isIngreso =
     form.querySelector('input[name="txType"]:checked')?.value === "ingreso";
-  label.textContent = isIngreso ? "Ingreso fijo (nómina, pensión…)" : "Gasto fijo (cuota mensual)";
+  label.textContent = isIngreso
+    ? "Ingreso fijo (nómina, pensión…)"
+    : "Gasto fijo (cuota mensual)";
+}
+
+export function initMonthNav() {
+  const prev = document.getElementById("btn-month-prev");
+  const next = document.getElementById("btn-month-next");
+  prev?.addEventListener("click", () => setViewMonth(shiftMonth(viewMonth, -1)));
+  next?.addEventListener("click", () => setViewMonth(shiftMonth(viewMonth, 1)));
+
+  document.getElementById("month-hint")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-goto-month]");
+    if (!btn) return;
+    const [y, m] = btn.dataset.gotoMonth.split("-").map(Number);
+    setViewMonth(new Date(y, m - 1, 1));
+  });
 }
 
 export function initModal() {
@@ -272,7 +361,7 @@ export function initModal() {
 
   function openModal() {
     form.reset();
-    document.getElementById("tx-date").value = todayInputValue();
+    document.getElementById("tx-date").value = defaultDateForView();
     document.getElementById("tx-type-gasto").checked = true;
     fillCategorySelect(categorySelect, "Supermercado");
     userSelect.value = getStoredUser();
@@ -302,6 +391,7 @@ export function initModal() {
         form.querySelector('input[name="txType"]:checked')?.value === "ingreso";
       if (isIngreso) {
         fillCategorySelect(categorySelect, INCOME_CATEGORIES[0]);
+        document.getElementById("tx-fixed").checked = true;
       } else {
         fillCategorySelect(categorySelect, "Supermercado");
       }
@@ -340,6 +430,15 @@ export function initModal() {
     try {
       setStoredUser(payload.addedBy);
       await addTransaction(payload);
+      // Si guarda en otro mes, saltar a ese mes para ver el efecto
+      const [y, m] = payload.date.split("-").map(Number);
+      const txMonth = new Date(y, m - 1, 1);
+      if (
+        txMonth.getFullYear() !== viewMonth.getFullYear() ||
+        txMonth.getMonth() !== viewMonth.getMonth()
+      ) {
+        setViewMonth(txMonth);
+      }
       closeModal();
     } catch (err) {
       console.error(err);
@@ -361,7 +460,9 @@ export function initBudgetModal() {
 
   if (!dialog || !form || !openBtn || !fields) return;
 
-  const expenseCats = CATEGORIES.filter((c) => !INCOME_CATEGORIES.includes(c) || c === "Otros");
+  const expenseCats = CATEGORIES.filter(
+    (c) => !INCOME_CATEGORIES.includes(c) || c === "Otros"
+  );
 
   function openModal() {
     fields.innerHTML = "";
@@ -401,7 +502,7 @@ export function initBudgetModal() {
     statusEl.textContent = "Guardando…";
 
     try {
-      await saveBudget(monthYearKey(), categories);
+      await saveBudget(monthYearKey(viewMonth), categories);
       dialog.close();
     } catch (err) {
       console.error(err);
