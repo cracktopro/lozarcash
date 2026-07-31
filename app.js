@@ -1,30 +1,43 @@
 /**
  * Lozarcash — entry point
- * Fase 2: dashboard en vivo, modal CRUD y cálculos de margen
+ * Fase 3: fix cálculos, ingresos fijos, sobres y sync budgets
  */
 import { subscribeTransactions } from "./js/transactions.js";
+import { subscribeBudget } from "./js/budgets.js";
 import {
   initModal,
-  initRecentListActions,
-  renderDashboard,
+  initBudgetModal,
+  initListActions,
+  setTransactions,
+  setBudget,
   showSyncError,
 } from "./js/ui.js";
 
 function boot() {
   initModal();
-  initRecentListActions();
+  initBudgetModal();
+  initListActions();
 
   subscribeTransactions(
     (transactions) => {
       showSyncError("");
-      renderDashboard(transactions);
+      setTransactions(transactions);
     },
     (err) => {
-      showSyncError(`No se pudo sincronizar: ${err.message}`);
+      showSyncError(`No se pudo sincronizar movimientos: ${err.message}`);
     }
   );
 
-  console.log("[Lozarcash] Dashboard + listener activos.");
+  subscribeBudget(
+    (budget) => {
+      setBudget(budget);
+    },
+    (err) => {
+      showSyncError(`No se pudo sincronizar presupuestos: ${err.message}`);
+    }
+  );
+
+  console.log("[Lozarcash] Dashboard, fijos e ingresos fijos activos.");
 }
 
 boot();

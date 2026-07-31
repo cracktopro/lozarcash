@@ -10,29 +10,30 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase.js";
+import { normalizeTransaction } from "./calculations.js";
 
 const COLLECTION = "transactions";
 
 /**
  * @param {object} data
  * @param {string} data.type - "ingreso" | "gasto"
- * @param {number} data.amount
+ * @param {number|string} data.amount
  * @param {string} data.concept
  * @param {string} data.category
- * @param {string} data.date - YYYY-MM-DD (input type=date)
+ * @param {string} data.date - YYYY-MM-DD
  * @param {boolean} data.isFixed
  * @param {boolean} data.isBizum
  * @param {string} data.addedBy
  */
 export async function addTransaction(data) {
-  const [y, m, d] = data.date.split("-").map(Number);
-  // Mediodía local para evitar desfases de zona horaria
+  const type = data.type === "ingreso" ? "ingreso" : "gasto";
+  const [y, m, d] = String(data.date).split("-").map(Number);
   const localDate = new Date(y, m - 1, d, 12, 0, 0, 0);
 
   const payload = {
-    type: data.type,
+    type,
     amount: Number(data.amount),
-    concept: data.concept.trim(),
+    concept: String(data.concept).trim(),
     category: data.category,
     date: Timestamp.fromDate(localDate),
     isFixed: Boolean(data.isFixed),
@@ -49,7 +50,7 @@ export async function removeTransaction(id) {
 }
 
 /**
- * Listener en tiempo real. Devuelve la función unsubscribe.
+ * Listener en tiempo real. Normaliza cada documento al emitir.
  * @param {(items: Array<object>) => void} onData
  * @param {(err: Error) => void} [onError]
  */
@@ -57,7 +58,9 @@ export function subscribeTransactions(onData, onError) {
   return onSnapshot(
     collection(db, COLLECTION),
     (snapshot) => {
-      const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const items = snapshot.docs.map((d) =>
+        normalizeTransaction({ id: d.id, ...d.data() })
+      );
       onData(items);
     },
     (err) => {

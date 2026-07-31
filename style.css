@@ -218,9 +218,27 @@ body {
   padding: 1.1rem 1rem 0.85rem;
 }
 
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.panel__head .panel__title {
+  margin-bottom: 0;
+}
+
 .panel__title {
   font-size: 0.95rem;
   font-weight: 600;
+  margin-bottom: 0.65rem;
+}
+
+.panel__summary {
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
   margin-bottom: 0.65rem;
 }
 
@@ -228,6 +246,76 @@ body {
   font-size: 0.875rem;
   color: var(--color-ink-muted);
   padding-bottom: 0.35rem;
+}
+
+.btn-link {
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.35rem;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+/* —— Envelopes / sobres —— */
+.envelope-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-bottom: 0.25rem;
+}
+
+.envelope__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.envelope__name {
+  font-weight: 600;
+}
+
+.envelope__figures {
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.envelope__bar {
+  height: 0.45rem;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.envelope__fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  transition: width 0.35s ease, background-color 0.25s ease;
+}
+
+.budget-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 50dvh;
+  overflow: auto;
+}
+
+.modal__lead {
+  font-size: 0.875rem;
+  color: var(--color-ink-muted);
+  margin-top: -0.25rem;
 }
 
 .tx-list {

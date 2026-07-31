@@ -79,7 +79,7 @@ Checkbox/Toggle rápido para marcar si es "Bizum".
 
 Listener en tiempo real (onSnapshot) de Firestore para actualizar la vista inmediatamente cuando el otro usuario añade un dato.
 
-[ ] Sistema de Estimador / Sobres:
+[x] Sistema de Estimador / Sobres:
 
 Interfaz para asignar el "Margen disponible" a diferentes categorías.
 

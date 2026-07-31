@@ -1,0 +1,10 @@
+{
+  "name": "lozarcash",
+  "private": true,
+  "version": "0.3.0",
+  "description": "Gestor financiero personal compartido (Firebase + GitHub Pages)",
+  "scripts": {
+    "start": "npx --yes serve . -p 3000",
+    "serve": "npx --yes serve . -p 3000"
+  }
+}

@@ -8,9 +8,14 @@ export const CATEGORIES = [
   "Formación",
   "Suministros",
   "Supermercado",
+  "Nómina",
+  "Pensión",
   "Salario",
   "Otros",
 ];
+
+/** Categorías sugeridas al marcar un ingreso */
+export const INCOME_CATEGORIES = ["Nómina", "Pensión", "Salario", "Otros"];
 
 export const USERS = ["Usuario 1", "Usuario 2"];
 
